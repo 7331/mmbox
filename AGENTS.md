@@ -9,3 +9,4 @@ FastAPI + Redis in `backend/`, Vite SPA in `frontend/`, one Compose stack. Read 
 - Client IP for rate limits is the TCP peer; a client-IP header counts only from a peer in `PROXY_TRUSTED_CIDRS` (exact proxy addresses). Never trust `X-Forwarded-For`.
 - Tests stay minimal: the main path and the failure that would hurt most. Verify against the running stack (curl, the browser) first.
 - Names are explicit and long form; signatures are keyword-only past the first argument (ruff enforces it).
+- Git hooks (`.pre-commit-config.yaml`): ruff on commit, the fast gates on push; CI stays the authority. Install with `uv run --project backend pre-commit install`.

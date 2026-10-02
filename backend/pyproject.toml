@@ -37,6 +37,8 @@ dev = [
     "pytest-randomly>=4.0",
     # Formatting
     "ruff>=0.15",
+    # Git hooks (.pre-commit-config.yaml at the repository root)
+    "pre-commit>=4.3",
     # Type checking
     "ty>=0.0.61",
     # Code quality

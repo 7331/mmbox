@@ -81,6 +81,14 @@ Copy `.env.example` to `.env` first. The app listens on `${WEB_PORT:-8099}`; put
 front (Caddy, nginx, Cloudflare Tunnel). Visitor buckets need https, so serve mmbox over https too.
 Host-specific networking goes in a `docker-compose.override.yml`, which is gitignored.
 
+## Git hooks
+
+```sh
+uv run --project backend pre-commit install
+```
+
+Commits run ruff format and ruff check --fix; pushes run the gates below and the frontend typecheck.
+
 ## Gates (backend/)
 
 ```sh

@@ -1,0 +1,38 @@
+# Install once: uv run --project backend pre-commit install --hook-type pre-commit --hook-type pre-push
+# Commit: fast auto-fixers only. Push: the fast gates, so nothing red leaves the machine. CI stays the authority.
+# Hooks are `repo: local` so tool versions come from backend/uv.lock and frontend/package-lock.json, as in CI.
+default_install_hook_types: [pre-commit, pre-push]
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --project backend ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        stages: [pre-commit]
+
+      - id: ruff-check
+        name: ruff check --fix
+        entry: uv run --project backend ruff check --fix --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        stages: [pre-commit]
+
+      - id: backend-gates
+        name: backend gates
+        entry: sh -c 'cd backend && uv run ruff format --check . && uv run ruff check . && uv run ty check && uv run lint-imports && uv run deptry . && uv run vulture && uv run codespell && uv run pytest -q'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      - id: frontend-typecheck
+        name: frontend typecheck
+        entry: sh -c 'cd frontend && npm run -s typecheck'
+        language: system
+        pass_filenames: false
+        files: ^frontend/
+        stages: [pre-push]
