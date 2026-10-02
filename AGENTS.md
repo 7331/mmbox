@@ -10,3 +10,4 @@ FastAPI + Redis in `backend/`, Vite SPA in `frontend/`, one Compose stack. Read 
 - Tests stay minimal: the main path and the failure that would hurt most. Verify against the running stack (curl, the browser) first.
 - Names are explicit and long form; signatures are keyword-only past the first argument (ruff enforces it).
 - Git hooks (`.pre-commit-config.yaml`): ruff on commit, the fast gates on push; CI stays the authority. Install with `uv run --project backend pre-commit install`.
+- Design: Figma direction A, calm and photo-first (Inter, one blue accent #0A6CFF / #3D8BFF dark, Rune Icons outline), mobile web first. Logo: candidate 1, Portal's spiral as a box, #80C8EF (owner, 2026-10-02).
