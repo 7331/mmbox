@@ -2,7 +2,6 @@
 name = "mmbox"
 version = "0.1.0"
 description = "Ephemeral image/gif host — upload, get a raw URL, it expires"
-readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "fastapi>=0.116",
