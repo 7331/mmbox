@@ -64,10 +64,8 @@ export interface ShelfItem extends ShelfRecord {
   label: string;
   previewUrl: string;
   previewIsObject: boolean;
-  node?: HTMLElement;
-  thumb?: HTMLButtonElement;
-  relative?: HTMLElement;
-  date?: HTMLElement;
+  node?: HTMLButtonElement;
+  badge?: HTMLElement;
 }
 
 export interface UploadApiResponse {

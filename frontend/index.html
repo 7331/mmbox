@@ -3,188 +3,261 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f2f3ef" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#111310" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="mmbox">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>mmbox</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%231fca73'/%3E%3Cpath d='M3 11l3-3 2 2 2.5-3L13 11H3z' fill='%230b2918'/%3E%3C/svg%3E">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <script type="module" src="/src/main.ts"></script>
 </head>
-<body class="min-h-dvh bg-page font-sans text-sm font-medium leading-[1.4] text-ink antialiased dark:bg-page-dark dark:text-ink-dark">
-  <svg class="sr-only" aria-hidden="true">
-    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
-    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="19" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.3 10.8 7.4-4.5m-7.4 6.9 7.4 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
-    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  </svg>
+<body>
+  <input id="filePicker" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp" tabindex="-1" aria-hidden="true">
 
-  <main id="shelf" class="mx-auto min-h-dvh w-full max-w-md px-3.5 pb-10 pt-3.5 sm:pt-7">
-    <header class="mb-2.5 flex min-h-9 items-center">
-      <div><h1 class="m-0 text-xl font-extrabold leading-none tracking-tight">mmbox</h1></div>
-      <button id="openBucketSettings" class="ms-auto inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-muted hover:text-ink dark:border-line-dark dark:bg-surface-dark dark:text-muted-dark dark:hover:text-ink-dark" type="button" aria-haspopup="dialog">
-        <span id="bucketStatusDot" class="size-2 rounded-full bg-line dark:bg-line-dark" aria-hidden="true"></span>
-        <span id="bucketStatusText">Temporary storage</span>
+  <!-- Home: drop zone (temporary) or bucket grid, the device shelf, thumb-zone actions. -->
+  <main id="homeScreen" class="screen home-screen">
+    <header class="app-header">
+      <div class="brand">
+        <img class="brand-mark" src="/icons/favicon.svg" width="34" height="34" alt="">
+        <h1 class="brand-name">mmbox</h1>
+      </div>
+      <button id="openBucketSettings" class="status-chip" type="button" aria-haspopup="dialog">
+        <span id="bucketStatusDot" class="status-dot" aria-hidden="true"></span>
+        <span id="bucketStatusText">Temporary</span>
+        <span data-icon="chevronDown" data-icon-size="16"></span>
       </button>
     </header>
 
-    <section class="overflow-hidden rounded-xl border border-line bg-surface dark:border-line-dark dark:bg-surface-dark" aria-label="Upload an image">
-      <div id="pickerView" class="relative grid min-h-[180px] place-items-center px-5 py-6 text-center">
-        <input id="filePicker" class="pointer-events-none absolute size-px opacity-0" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
-        <label class="group grid cursor-pointer justify-items-center" for="filePicker">
-          <span class="mb-3 grid size-11 place-items-center text-accent transition-transform duration-150 group-hover:-translate-y-0.5 dark:text-accent-dark"><svg class="size-8"><use href="#i-upload"></use></svg></span>
-          <strong class="text-lg font-bold leading-tight tracking-tight">Upload an image</strong>
-          <span id="pickerHint" class="mt-2 text-xs text-muted dark:text-muted-dark">PNG, JPG, GIF or WEBP · 25 MB max</span>
-        </label>
-      </div>
-
-      <div id="selectedView" class="p-3" hidden>
-        <div class="relative grid max-h-[40dvh] min-h-[140px] place-items-center overflow-hidden rounded-lg bg-[#0d0f0c]"><img id="selectedImage" class="block max-h-[40dvh] w-full object-contain" alt="Selected image"></div>
-        <p id="selectedNote" class="mx-0.5 mb-0 mt-2 text-xs text-muted dark:text-muted-dark" hidden></p>
-        <div class="mt-2.5 flex gap-2">
-          <button id="changeSelected" class="inline-flex min-h-9 items-center justify-center rounded-lg border border-line bg-surface2 px-3.5 text-sm font-bold active:translate-y-px dark:border-line-dark dark:bg-surface2-dark" type="button">Change</button>
-          <button id="editSelected" class="inline-flex min-h-9 items-center justify-center rounded-lg border border-line bg-surface2 px-3.5 text-sm font-bold active:translate-y-px dark:border-line-dark dark:bg-surface2-dark" type="button">Edit</button>
-        </div>
-        <div class="mt-3.5 grid grid-cols-1 gap-2 min-[371px]:grid-cols-[minmax(0,1fr)_minmax(130px,1.2fr)]">
-          <label id="ttlField" class="grid gap-1 text-[11px] text-muted dark:text-muted-dark"><span>Delete after</span>
-            <select id="ttlSelect" class="block min-h-10 w-full cursor-pointer rounded-lg border-line bg-surface py-2 pe-9 ps-3 text-sm font-bold focus:border-accent focus:ring-accent disabled:pointer-events-none disabled:opacity-50 dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark dark:focus:border-accent-dark dark:focus:ring-accent-dark" aria-label="Delete link after">
-              <option value="300">5 minutes</option>
-              <option value="900">15 minutes</option>
-              <option value="1800">30 minutes</option>
-              <option value="3600">1 hour</option>
-              <option value="10800">3 hours</option>
-              <option value="21600">6 hours</option>
-              <option value="43200">12 hours</option>
-              <option value="86400">24 hours</option>
-            </select>
-          </label>
-          <button id="uploadSelected" class="inline-flex min-h-10 flex-1 items-center justify-center self-end rounded-lg border border-transparent bg-accent px-4 text-sm font-bold text-accent-ink hover:brightness-105 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 dark:bg-accent-dark" type="button">Create link</button>
-        </div>
-      </div>
-
-      <div id="progressView" class="grid gap-3 p-3" hidden>
-        <div class="relative grid max-h-[40dvh] min-h-[140px] place-items-center overflow-hidden rounded-lg bg-[#0d0f0c]"><img id="progressImage" class="block max-h-[40dvh] w-full object-contain" alt="Image uploading"></div>
-        <div class="flex items-baseline justify-between gap-3 px-0.5 pt-0.5"><strong class="text-base">Creating link</strong><span id="progressText" class="text-xs tabular-nums text-muted dark:text-muted-dark">0%</span></div>
-        <div class="h-1.5 overflow-hidden rounded-full bg-surface2 dark:bg-surface2-dark" role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="100"><div id="progressFill" class="h-full w-0 rounded-full bg-accent transition-[width] duration-100 ease-linear dark:bg-accent-dark"></div></div>
-      </div>
-
-      <div id="resultView" class="grid gap-3 p-3" hidden>
-        <div class="flex items-center justify-between gap-3 px-0.5">
-          <div><h2 class="m-0 text-base font-bold tracking-tight">Link ready</h2><p id="resultExpiry" class="m-0 mt-0.5 text-[11px] text-muted dark:text-muted-dark"></p></div>
-        </div>
-        <div class="relative grid max-h-[26dvh] min-h-[100px] place-items-center overflow-hidden rounded-lg bg-[#0d0f0c]"><img id="resultImage" class="block max-h-[26dvh] w-full object-contain" alt="Uploaded image"></div>
-        <div class="grid min-h-11 grid-cols-[minmax(0,1fr)_auto_auto] items-center overflow-hidden rounded-lg border border-line bg-surface2 dark:border-line-dark dark:bg-surface2-dark">
-          <span id="resultLink" class="overflow-hidden text-ellipsis whitespace-nowrap px-3 font-mono text-xs font-semibold leading-tight"></span>
-          <button id="resultCopy" class="grid size-10 shrink-0 cursor-pointer place-items-center border-0 border-s border-line bg-transparent text-muted hover:text-ink dark:border-line-dark dark:text-muted-dark dark:hover:text-ink-dark" type="button" aria-label="Copy link" title="Copy link"><svg class="size-[18px]"><use href="#i-copy"></use></svg></button>
-          <button id="resultShare" class="grid size-10 shrink-0 cursor-pointer place-items-center border-0 border-s border-line bg-transparent text-muted hover:text-ink dark:border-line-dark dark:text-muted-dark dark:hover:text-ink-dark" type="button" aria-label="Share link" title="Share link"><svg class="size-[18px]"><use href="#i-share"></use></svg></button>
-        </div>
-        <button id="uploadAnother" class="cursor-pointer justify-self-start border-0 bg-transparent p-0 text-xs font-bold text-muted hover:text-ink dark:text-muted-dark dark:hover:text-ink-dark" type="button">Upload another image</button>
-      </div>
-
+    <section id="temporaryDropSection" class="drop-section" aria-label="Upload an image">
+      <button id="dropZone" class="drop-zone" type="button">
+        <span class="drop-zone-badge"><span data-icon="images" data-icon-size="36"></span></span>
+        <strong class="drop-zone-title">Choose a photo</strong>
+        <span class="drop-zone-subtitle">PNG, JPG, GIF or WebP, up to 25 MB</span>
+        <span id="pasteHint" class="drop-zone-hint">or paste <kbd id="pasteShortcut">⌘V</kbd> · or drop a file</span>
+      </button>
+      <p class="note-line"><span data-icon="lock" data-icon-size="14"></span>Metadata stripped · links expire in 5 min to 24 h</p>
     </section>
 
-    <section id="uploadShelf" class="mt-5" aria-labelledby="shelfTitle" hidden>
-      <header class="mx-0.5 mb-2 flex items-baseline justify-between gap-3"><h2 id="shelfTitle" class="m-0 text-sm font-bold">On this device</h2><span id="shelfCount" class="text-[11px] text-muted dark:text-muted-dark">0 uploads</span></header>
-      <div id="shelfList" class="grid gap-2"></div>
-    </section>
-
-    <section id="bucketBrowser" class="mt-5" aria-labelledby="bucketBrowserTitle" hidden>
-      <header class="mx-0.5 mb-2 flex items-baseline justify-between gap-3">
-        <h2 id="bucketBrowserTitle" class="m-0 text-sm font-bold">In your bucket</h2>
-        <button id="refreshBucket" class="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-bold text-muted hover:text-ink dark:text-muted-dark dark:hover:text-ink-dark" type="button">Refresh</button>
+    <section id="uploadShelf" class="device-shelf" aria-labelledby="shelfTitle" hidden>
+      <header class="section-header">
+        <h2 id="shelfTitle" class="section-title">On this device</h2>
+        <button id="toggleShelfLayout" class="text-button" type="button" aria-controls="shelfList" aria-expanded="false" hidden>See all</button>
       </header>
-      <p id="bucketBrowserNote" class="mx-0.5 mb-2 mt-0 text-[11px] text-muted dark:text-muted-dark" hidden></p>
-      <div id="bucketGrid" class="grid grid-cols-3 gap-2 min-[420px]:grid-cols-4"></div>
-      <button id="loadMoreBucket" class="mt-2 w-full cursor-pointer rounded-lg border border-line bg-surface py-2 text-xs font-bold dark:border-line-dark dark:bg-surface-dark" type="button" hidden>Load more</button>
+      <div id="shelfList" class="shelf-strip"></div>
     </section>
 
-    <template id="bucketTileTemplate">
-      <figure class="group relative m-0 aspect-square overflow-hidden rounded-lg bg-surface2 dark:bg-surface2-dark">
-        <img class="size-full object-cover" alt="" loading="lazy" decoding="async">
-        <span class="tile-kind absolute inset-0 grid place-items-center text-[11px] font-bold text-muted dark:text-muted-dark" hidden></span>
-        <figcaption class="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-          <button class="grid size-7 cursor-pointer place-items-center rounded-md border-0 bg-black/50 text-white" data-action="copy" type="button" aria-label="Copy link" title="Copy link"><svg class="size-3.5"><use href="#i-copy"></use></svg></button>
-          <button class="grid size-7 cursor-pointer place-items-center rounded-md border-0 bg-black/50 text-white" data-action="open" type="button" aria-label="Open" title="Open"><svg class="size-3.5"><use href="#i-download"></use></svg></button>
-          <button class="grid size-7 cursor-pointer place-items-center rounded-md border-0 bg-danger/80 text-white" data-action="delete" type="button" aria-label="Delete" title="Delete"><svg class="size-3.5"><use href="#i-trash"></use></svg></button>
-        </figcaption>
-      </figure>
-    </template>
+    <section id="bucketBrowser" class="bucket-browser" aria-labelledby="bucketBrowserTitle" hidden>
+      <header class="bucket-header">
+        <h2 id="bucketBrowserTitle" class="bucket-title">In your bucket</h2>
+        <p id="bucketSummary" class="bucket-summary"></p>
+      </header>
+      <p id="bucketBrowserNote" class="bucket-note" hidden></p>
+      <div id="bucketGrid" class="bucket-grid"></div>
+      <button id="loadMoreBucket" class="button button-secondary load-more" type="button" hidden>Load more</button>
+    </section>
+
+    <nav id="homeBottomBar" class="bottom-bar" aria-label="Upload">
+      <div id="temporaryActions" class="bottom-bar-row">
+        <button id="pasteFromClipboard" class="button button-secondary button-paste" type="button"><span data-icon="copy"></span>Paste</button>
+        <button id="choosePhoto" class="button button-primary button-grow" type="button"><span data-icon="image"></span>Choose photo</button>
+      </div>
+      <div id="bucketActions" class="bottom-bar-row bottom-bar-row-spread" hidden>
+        <button id="openBucketSettingsFromBar" class="icon-button icon-button-accent" type="button" aria-label="Bucket settings" title="Bucket settings"><span data-icon="settings" data-icon-size="22"></span></button>
+        <button id="uploadToBucket" class="button button-primary button-upload" type="button"><span data-icon="upload"></span>Upload</button>
+        <button id="refreshBucket" class="icon-button icon-button-accent" type="button" aria-label="Refresh the bucket" title="Refresh"><span data-icon="refresh" data-icon-size="22"></span></button>
+      </div>
+    </nav>
   </main>
 
-  <section id="editorLayer" class="fixed inset-0 z-20 grid grid-rows-[auto_minmax(0,1fr)] bg-[#161916] text-white" aria-label="Image editor" hidden>
-    <div class="flex min-h-[calc(48px+env(safe-area-inset-top))] items-center justify-between border-b border-[#30352d] px-2 pt-[env(safe-area-inset-top)] ps-[max(8px,env(safe-area-inset-left))] pe-[max(8px,env(safe-area-inset-right))]">
-      <button id="cancelEditor" class="min-h-11 min-w-16 cursor-pointer rounded-lg border-0 bg-transparent px-3 font-bold text-[#c5cac2] disabled:opacity-50" type="button">Cancel</button>
-      <strong class="text-sm">Edit</strong>
-      <button id="doneEditor" class="min-h-11 min-w-16 cursor-pointer rounded-lg border-0 bg-accent px-3 font-bold text-accent-ink disabled:opacity-50" type="button">Done</button>
+  <!-- One upload: review, progress, then the link. -->
+  <section id="flowScreen" class="screen flow-screen" aria-labelledby="flowTitle" hidden>
+    <header class="flow-top-bar">
+      <button id="closeFlow" class="icon-button" type="button" aria-label="Close" title="Close"><span data-icon="close" data-icon-size="22"></span></button>
+      <h2 id="flowTitle" class="flow-title">New link</h2>
+      <div class="flow-top-bar-end">
+        <button id="editSelected" class="text-button text-button-large" type="button"><span data-icon="pencil" data-icon-size="18"></span>Edit</button>
+        <button id="newUpload" class="text-button text-button-large" type="button" hidden><span data-icon="plus" data-icon-size="18"></span>New</button>
+      </div>
+    </header>
+
+    <div id="flowPhoto" class="flow-photo">
+      <img id="flowImage" alt="">
+      <video id="flowVideo" muted playsinline preload="metadata" hidden></video>
     </div>
-    <div id="markerHost" class="min-h-0 pb-[env(safe-area-inset-bottom)]"></div>
-  </section>
 
-  <div id="dragCover" class="pointer-events-none fixed inset-0 z-30 grid place-items-center bg-[color-mix(in_srgb,#1fca73_20%,rgb(10_20_13/0.84))] text-lg font-extrabold tracking-tight text-white backdrop-blur-[5px]" hidden>Drop image</div>
-
-  <template id="shelfItemTemplate">
-    <article class="shelf-item grid animate-item-in grid-cols-[56px_minmax(0,1fr)] gap-2.5 overflow-hidden rounded-xl border border-line bg-surface p-2 dark:border-line-dark dark:bg-surface-dark">
-      <button class="thumb relative size-14 cursor-pointer overflow-hidden rounded-lg border-0 bg-surface2 disabled:cursor-default dark:bg-surface2-dark" type="button" aria-label="Open image"><img class="size-full object-cover" alt="" decoding="async"></button>
-      <div class="item-main min-w-0">
-        <div class="item-top flex items-center justify-between gap-2"><p class="item-name m-0 mt-px overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-extrabold"></p><span class="item-relative shrink-0 text-[10px] tabular-nums text-muted dark:text-muted-dark"></span></div>
-        <p class="item-date m-0 mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] text-muted dark:text-muted-dark"></p>
-        <div class="item-actions mt-1.5 flex justify-end gap-1">
-          <button class="icon-button grid size-8 cursor-pointer place-items-center rounded-lg border-0 bg-surface2 text-muted hover:text-ink disabled:opacity-40 dark:bg-surface2-dark dark:text-muted-dark dark:hover:text-ink-dark" data-action="copy" type="button" aria-label="Copy link" title="Copy link"><svg class="size-4"><use href="#i-copy"></use></svg></button>
-          <button class="icon-button grid size-8 cursor-pointer place-items-center rounded-lg border-0 bg-surface2 text-muted hover:text-ink disabled:opacity-40 dark:bg-surface2-dark dark:text-muted-dark dark:hover:text-ink-dark" data-action="share" type="button" aria-label="Share link" title="Share link"><svg class="size-4"><use href="#i-share"></use></svg></button>
-          <button class="icon-button grid size-8 cursor-pointer place-items-center rounded-lg border-0 bg-surface2 text-muted hover:text-ink disabled:opacity-40 dark:bg-surface2-dark dark:text-muted-dark dark:hover:text-ink-dark" data-action="download" type="button" aria-label="Download image" title="Download image"><svg class="size-4"><use href="#i-download"></use></svg></button>
-          <button class="icon-button ms-0.5 grid size-8 cursor-pointer place-items-center rounded-lg border-0 bg-danger-soft text-danger disabled:opacity-40 dark:bg-danger-soft-dark dark:text-danger-dark" data-action="delete" type="button" aria-label="Delete image" title="Delete image"><svg class="size-4"><use href="#i-trash"></use></svg></button>
+    <div id="selectedView" class="flow-body">
+      <p class="note-line"><span data-icon="lock" data-icon-size="14"></span><span id="selectedInfo"></span></p>
+      <p id="selectedNote" class="flow-note" hidden></p>
+      <div id="lifetimeSection">
+        <h3 id="lifetimeHeading" class="field-heading">Delete after</h3>
+        <div id="lifetimeChoices" class="lifetime-choices" role="radiogroup" aria-labelledby="lifetimeHeading">
+          <button class="chip" type="button" role="radio" data-seconds="300">5 min</button>
+          <button class="chip" type="button" role="radio" data-seconds="900">15 min</button>
+          <button class="chip" type="button" role="radio" data-seconds="1800">30 min</button>
+          <button class="chip" type="button" role="radio" data-seconds="3600">1 h</button>
+          <button class="chip" type="button" role="radio" data-seconds="10800">3 h</button>
+          <button class="chip" type="button" role="radio" data-seconds="21600">6 h</button>
+          <button class="chip" type="button" role="radio" data-seconds="43200">12 h</button>
+          <button class="chip" type="button" role="radio" data-seconds="86400">24 h</button>
+        </div>
+        <p id="lifetimeExpiry" class="muted-line"></p>
+      </div>
+      <div id="destinationSection" class="grouped-list" hidden>
+        <div class="grouped-row">
+          <span data-icon="bucket" class="row-icon-accent"></span>
+          <span id="destinationName" class="grouped-row-label"></span>
+          <button id="changeDestination" class="text-button" type="button">Change</button>
+        </div>
+        <div class="grouped-row grouped-row-muted">
+          <span data-icon="circleCheck"></span>
+          <span id="destinationMode"></span>
         </div>
       </div>
-    </article>
+      <p id="destinationNote" class="muted-paragraph" hidden></p>
+    </div>
+
+    <div id="progressView" class="flow-body" hidden>
+      <div class="progress-heading"><strong id="progressLabel">Uploading…</strong><span id="progressText">0%</span></div>
+      <div id="progressTrack" class="progress-track" role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="100"><div id="progressFill" class="progress-fill"></div></div>
+      <p id="progressPrivacyStep" class="progress-step progress-step-done"><span data-icon="check" data-icon-size="16"></span><span id="progressPrivacyText">Metadata removed</span></p>
+      <p class="progress-step"><span data-icon="upload" data-icon-size="16"></span><span id="progressBytes"></span></p>
+    </div>
+
+    <div id="resultView" class="flow-body" hidden>
+      <div class="result-heading"><span data-icon="circleCheck" data-icon-size="24"></span><h3 class="result-title">Link ready</h3></div>
+      <p id="resultCopyState" class="result-subtitle"></p>
+      <div class="link-field">
+        <span id="resultLink" class="link-field-text"></span>
+        <button id="resultCopyIcon" class="icon-button icon-button-accent" type="button" aria-label="Copy link" title="Copy link"><span data-icon="copy"></span></button>
+      </div>
+      <div class="result-meta">
+        <span id="resultExpiry"></span>
+        <button id="resultDelete" class="text-button text-button-danger" type="button">Delete now</button>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <button id="uploadSelected" class="button button-primary button-full" type="button"></button>
+      <button id="cancelUpload" class="button button-secondary button-full" type="button" hidden>Cancel</button>
+      <div id="resultActions" class="bottom-bar-row" hidden>
+        <button id="resultShare" class="button button-secondary button-grow" type="button"><span data-icon="share"></span>Share</button>
+        <button id="resultCopy" class="button button-primary button-grow" type="button"><span data-icon="copy"></span>Copy link</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Full-screen viewer for shelf items and bucket objects. -->
+  <section id="viewerLayer" class="viewer" role="dialog" aria-modal="true" aria-labelledby="viewerTitle" hidden>
+    <header class="viewer-top-bar">
+      <button id="closeViewer" class="icon-button icon-button-filled" type="button" aria-label="Close" title="Close"><span data-icon="close" data-icon-size="22"></span></button>
+      <div class="viewer-heading">
+        <strong id="viewerTitle" class="viewer-title"></strong>
+        <span id="viewerSubtitle" class="viewer-subtitle"></span>
+      </div>
+      <span id="viewerPosition" class="viewer-position"></span>
+    </header>
+    <div id="viewerStage" class="viewer-stage">
+      <img id="viewerImage" alt="">
+      <video id="viewerVideo" controls playsinline preload="metadata" hidden></video>
+      <p id="viewerPlaceholder" class="viewer-placeholder" hidden></p>
+      <button id="viewerPrevious" class="viewer-step viewer-step-previous" type="button" aria-label="Previous"><span data-icon="chevronLeft" data-icon-size="24"></span></button>
+      <button id="viewerNext" class="viewer-step viewer-step-next" type="button" aria-label="Next"><span data-icon="chevronRight" data-icon-size="24"></span></button>
+    </div>
+    <div id="viewerFilmstrip" class="viewer-filmstrip"></div>
+    <p id="viewerHint" class="viewer-hint">Swipe for next</p>
+    <div class="viewer-actions">
+      <button class="viewer-action" type="button" data-viewer-action="copy"><span data-icon="link" data-icon-size="24"></span>Copy link</button>
+      <button class="viewer-action" type="button" data-viewer-action="share"><span data-icon="share" data-icon-size="24"></span>Share</button>
+      <button class="viewer-action" type="button" data-viewer-action="download"><span data-icon="download" data-icon-size="24"></span>Download</button>
+      <button class="viewer-action" type="button" data-viewer-action="open"><span data-icon="openExternal" data-icon-size="24"></span>Open</button>
+      <button class="viewer-action viewer-action-danger" type="button" data-viewer-action="delete"><span data-icon="trash" data-icon-size="24"></span>Delete</button>
+    </div>
+  </section>
+
+  <section id="editorLayer" class="editor-layer" aria-label="Image editor" hidden>
+    <div class="editor-top-bar">
+      <button id="cancelEditor" class="text-button text-button-large" type="button">Cancel</button>
+      <strong class="flow-title">Edit</strong>
+      <button id="doneEditor" class="button button-primary button-compact" type="button">Done</button>
+    </div>
+    <div id="markerHost" class="marker-host"></div>
+  </section>
+
+  <div id="dragCover" class="drag-cover" hidden><span data-icon="images" data-icon-size="36"></span>Drop to upload</div>
+
+  <template id="shelfItemTemplate">
+    <button class="shelf-item" type="button">
+      <img class="shelf-item-image" alt="" decoding="async">
+      <span class="shelf-item-badge"></span>
+    </button>
   </template>
 
-  <dialog id="bucketDialog" class="w-[min(calc(100%-28px),460px)] rounded-2xl border border-line bg-surface text-ink shadow-2xl dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" aria-labelledby="bucketTitle">
-    <form id="bucketForm" class="grid gap-3 p-5" method="dialog">
-      <div>
-        <h2 id="bucketTitle" class="m-0 text-lg font-bold tracking-tight">Use my own bucket</h2>
-        <p class="m-0 mt-1 text-[12px] text-muted dark:text-muted-dark">Any S3-compatible bucket: R2, Backblaze, RustFS or MinIO behind a tunnel, AWS. Uploads never expire and you can browse what's there. Keys are saved in this browser only.</p>
+  <template id="bucketTileTemplate">
+    <button class="bucket-tile" type="button">
+      <img class="bucket-tile-image" alt="" loading="lazy" decoding="async">
+      <span class="bucket-tile-kind" hidden></span>
+      <span class="bucket-tile-video" hidden><span data-icon="video" data-icon-size="16"></span><span class="bucket-tile-extension"></span></span>
+    </button>
+  </template>
+
+  <dialog id="bucketDialog" class="sheet" aria-labelledby="bucketTitle">
+    <form id="bucketForm" class="sheet-body" method="dialog">
+      <div class="sheet-grabber" aria-hidden="true"></div>
+      <header class="sheet-header">
+        <h2 id="bucketTitle" class="sheet-title">Use my own bucket</h2>
+        <button id="closeBucketSheet" class="sheet-close" type="button" aria-label="Close" title="Close"><span data-icon="close" data-icon-size="16"></span></button>
+      </header>
+      <p class="sheet-intro">Any S3-compatible bucket: R2, Backblaze, AWS, or RustFS / MinIO behind a tunnel. Uploads never expire and you can browse what's there. Keys stay in this browser.</p>
+      <div class="grouped-list">
+        <label class="form-row"><span class="form-row-label">Endpoint</span><input name="endpoint" type="url" inputmode="url" placeholder="https://….r2.cloudflarestorage.com" required autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label class="form-row"><span class="form-row-label">Bucket</span><input name="bucket" type="text" required autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label class="form-row"><span class="form-row-label">Region</span><input name="region" type="text" placeholder="auto" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label class="form-row"><span class="form-row-label">Access key</span><input name="accessKeyId" type="text" required autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label class="form-row"><span class="form-row-label">Secret</span><input name="secretAccessKey" type="password" required autocomplete="off"></label>
       </div>
-      <label class="grid gap-1 text-[11px] text-muted dark:text-muted-dark"><span>S3 endpoint</span><input name="endpoint" class="min-h-10 rounded-lg border-line bg-surface px-3 text-sm text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" type="url" placeholder="https://<account>.r2.cloudflarestorage.com" required autocomplete="off" spellcheck="false"></label>
-      <div class="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-2">
-        <label class="grid gap-1 text-[11px] text-muted dark:text-muted-dark"><span>Bucket</span><input name="bucket" class="min-h-10 rounded-lg border-line bg-surface px-3 text-sm text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" type="text" required autocomplete="off" spellcheck="false"></label>
-        <label class="grid gap-1 text-[11px] text-muted dark:text-muted-dark"><span>Region</span><input name="region" class="min-h-10 rounded-lg border-line bg-surface px-3 text-sm text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" type="text" placeholder="auto" autocomplete="off" spellcheck="false"></label>
+      <div class="grouped-list">
+        <label class="form-row"><span class="form-row-label">Public URL</span><input name="publicBase" type="url" inputmode="url" placeholder="https://files.example.com" required autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label class="form-row"><span class="form-row-label">Folder</span><input name="prefix" type="text" placeholder="optional, e.g. media" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
       </div>
-      <label class="grid gap-1 text-[11px] text-muted dark:text-muted-dark"><span>Access key ID</span><input name="accessKeyId" class="min-h-10 rounded-lg border-line bg-surface px-3 text-sm text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" type="text" required autocomplete="off" spellcheck="false"></label>
-      <label class="grid gap-1 text-[11px] text-muted dark:text-muted-dark"><span>Secret access key</span><input name="secretAccessKey" class="min-h-10 rounded-lg border-line bg-surface px-3 text-sm text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" type="password" required autocomplete="off"></label>
-      <label class="grid gap-1 text-[11px] text-muted dark:text-muted-dark"><span>Public URL of the bucket (links are built from this)</span><input name="publicBase" class="min-h-10 rounded-lg border-line bg-surface px-3 text-sm text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" type="url" placeholder="https://files.example.com" required autocomplete="off" spellcheck="false"></label>
-      <label class="grid gap-1 text-[11px] text-muted dark:text-muted-dark"><span>Folder inside the bucket (optional)</span><input name="prefix" class="min-h-10 rounded-lg border-line bg-surface px-3 text-sm text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" type="text" placeholder="media" autocomplete="off" spellcheck="false"></label>
-      <details class="rounded-lg border border-line bg-surface2 p-3 text-[12px] dark:border-line-dark dark:bg-surface2-dark">
-        <summary class="cursor-pointer font-bold">Optional: CORS for direct, private uploads</summary>
-        <p class="m-0 mt-2 text-muted dark:text-muted-dark">Without it, this server relays for you: images only, up to 25 MB, stripped on the server, keys sent per request and never stored. With it, files go straight from this browser to your bucket, any size, video included. Paste this once into the bucket's CORS settings (R2: bucket → Settings → CORS policy). Use a key scoped to this bucket with object read and write only.</p>
-        <pre id="corsPolicy" class="mt-2 overflow-auto rounded-md bg-page p-2 font-mono text-[11px] leading-snug dark:bg-page-dark"></pre>
-        <button id="copyCorsPolicy" class="mt-2 cursor-pointer rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold dark:border-line-dark dark:bg-surface-dark" type="button">Copy policy</button>
-        <p class="m-0 mt-3 text-muted dark:text-muted-dark">Or run once with the AWS CLI (uses your own credentials):</p>
-        <pre id="corsCommand" class="mt-2 overflow-auto whitespace-pre-wrap break-all rounded-md bg-page p-2 font-mono text-[11px] leading-snug dark:bg-page-dark"></pre>
-        <button id="copyCorsCommand" class="mt-2 cursor-pointer rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold dark:border-line-dark dark:bg-surface-dark" type="button">Copy command</button>
+      <details class="grouped-list cors-details">
+        <summary class="cors-summary">CORS (optional)<span data-icon="chevronDown" data-icon-size="18"></span></summary>
+        <div class="cors-body">
+          <p class="muted-paragraph">Without it, this server relays for you: images only, up to 25 MB, stripped on the server, keys sent per request and never stored. With it, files go straight from this browser to your bucket, any size, video included. Paste the policy into the bucket's CORS settings (R2: bucket, Settings, CORS policy), or run the command once. Use a key scoped to this bucket with object read and write only.</p>
+          <pre id="corsPolicy" class="code-block"></pre>
+          <pre id="corsCommand" class="code-block code-block-wrapped"></pre>
+          <div class="button-pair">
+            <button id="copyCorsPolicy" class="button button-secondary button-medium" type="button"><span data-icon="copy"></span>Copy policy</button>
+            <button id="copyCorsCommand" class="button button-secondary button-medium" type="button"><span data-icon="copy"></span>Copy command</button>
+          </div>
+        </div>
       </details>
-      <p id="bucketMessage" class="m-0 min-h-4 text-[12px] text-muted data-[tone=bad]:text-danger dark:text-muted-dark dark:data-[tone=bad]:text-danger-dark"></p>
-      <div class="flex flex-wrap justify-end gap-2">
-        <button id="forgetBucket" class="me-auto inline-flex min-h-10 cursor-pointer items-center rounded-lg border border-transparent bg-danger-soft px-3 text-sm font-bold text-danger dark:bg-danger-soft-dark dark:text-danger-dark" type="button" hidden>Stop using bucket</button>
-        <button id="cancelBucket" class="inline-flex min-h-10 cursor-pointer items-center rounded-lg border border-line bg-surface2 px-4 text-sm font-bold dark:border-line-dark dark:bg-surface2-dark" type="button">Cancel</button>
-        <button id="testBucket" class="inline-flex min-h-10 cursor-pointer items-center rounded-lg border border-line bg-surface2 px-4 text-sm font-bold disabled:opacity-50 dark:border-line-dark dark:bg-surface2-dark" type="button">Test</button>
-        <button id="saveBucket" class="inline-flex min-h-10 cursor-pointer items-center rounded-lg border border-transparent bg-accent px-4 text-sm font-bold text-accent-ink disabled:opacity-50 dark:bg-accent-dark" type="submit">Test and save</button>
+      <p id="bucketMessage" class="test-result" role="status" aria-live="polite"></p>
+      <div class="sheet-footer">
+        <div class="button-pair">
+          <button id="testBucket" class="button button-secondary" type="button">Test</button>
+          <button id="saveBucket" class="button button-primary button-grow" type="submit"><span data-icon="check"></span>Test and save</button>
+        </div>
+        <button id="forgetBucket" class="text-button text-button-danger forget-bucket" type="button" hidden>Stop using this bucket</button>
       </div>
     </form>
   </dialog>
 
-  <dialog id="deleteDialog" class="w-[min(calc(100%-28px),380px)] rounded-2xl border border-line bg-surface text-ink shadow-2xl dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark" aria-labelledby="deleteTitle">
-    <div class="p-5">
-      <h2 id="deleteTitle" class="m-0 text-lg font-bold tracking-tight">Delete this upload?</h2>
-      <p class="m-0 mt-1.5 text-[13px] text-muted dark:text-muted-dark">Anyone with the link will lose access immediately.</p>
-      <div class="mt-4 flex justify-end gap-2">
-        <button id="keepUpload" class="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface2 px-4 text-sm font-bold active:translate-y-px dark:border-line-dark dark:bg-surface2-dark" type="button">Keep</button>
-        <button id="deleteUpload" class="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-danger-soft px-4 text-sm font-bold text-danger active:translate-y-px disabled:pointer-events-none disabled:opacity-50 dark:bg-danger-soft-dark dark:text-danger-dark" type="button">Delete now</button>
+  <dialog id="confirmSheet" class="sheet sheet-compact" aria-labelledby="confirmTitle">
+    <div class="sheet-body">
+      <div class="sheet-grabber" aria-hidden="true"></div>
+      <h2 id="confirmTitle" class="sheet-title sheet-title-start"></h2>
+      <p id="confirmMessage" class="sheet-intro"></p>
+      <div class="sheet-footer">
+        <button id="confirmAccept" class="button button-danger button-full" type="button"></button>
+        <button id="confirmCancel" class="button button-secondary button-full" type="button">Keep</button>
       </div>
     </div>
   </dialog>
 
-  <div id="toast" class="fixed inset-x-4 bottom-[calc(14px+env(safe-area-inset-bottom))] z-40 mx-auto w-fit max-w-[calc(100%-32px)] rounded-full border border-[#30352d] bg-[#171a16] px-3.5 py-2 text-xs font-bold text-white shadow-xl data-[tone=bad]:border-[#8e3f3b]" role="status" aria-live="polite" hidden></div>
-
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </body>
 </html>

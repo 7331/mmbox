@@ -98,31 +98,36 @@ uv run ruff format --check . && uv run ruff check . && uv run ty check && uv run
 
 ## The page
 
-Choose, drop, or paste an image, optionally edit a still, then choose its lifetime and
-create the link. The review screen keeps Edit beside Change; the expiry choice sits with the final
-Create link action. The full-screen
-editor uses explicit Cancel/Done controls and larger touch targets on narrow screens. The
-result shows the raw URL and exact expiry date, attempts to copy the link, and exposes
-compact copy/share controls. Animated GIFs and WebPs skip editing instead of being
-silently flattened.
+Mobile web first (iOS Safari, Android Chrome): a calm, photo-first layout with 44 pt touch targets,
+safe-area insets, actions in the thumb zone and dialogs as bottom sheets. Light and dark follow the OS.
 
-The device-local shelf is a compact list with a thumbnail, randomized display label, live
-countdown, full expiry date, and copy/share/download/delete actions. Deleting asks for
-confirmation because it immediately breaks the public link; copy, share, open, and
-download do not.
+Home is a drop zone (tap to choose, paste, drop, or the Paste button) above the device shelf. Picking
+an image opens one screen per step: review (Edit opens the full-screen marker.js editor; animated
+GIFs and WebPs skip editing instead of being flattened), the lifetime chips (5 min to 24 h) with the
+exact stop time, then Create link. The upload shows progress and can be cancelled. The result shows
+the raw URL, copies it, and offers Share, Copy link and Delete now.
+
+The shelf ("On this device") is a strip of thumbnails with a live countdown badge. Tapping one opens
+the full-screen viewer (swipe or filmstrip between uploads) with copy, share, download and delete.
+Deleting asks first, in a sheet, because it immediately breaks the public link.
 
 The shelf survives a reload: each upload's thumbnail (~320px JPEG), URL, expiry and delete
 token go into IndexedDB (`mmbox` / `uploads`), so history is per-device and holds pixels
-rather than links; an expired row still shows what it was. Records are swept a day past
+rather than links; an expired item still shows what it was. Records are swept a day past
 expiry. Original bytes and original filenames are never persisted. The multipart filename
 is randomized before upload, the public and delete ids are independent random 128-bit
 values, and the server re-encodes pixels without EXIF, ICC, XMP, text chunks, or comments.
 Private-mode browsers can refuse IndexedDB outright; the page says so once and keeps
 working without history.
 
+Installed as an app (web app manifest, `/manifest.webmanifest`), mmbox is an Android share target:
+sharing a photo to it opens the review screen. `/service-worker.js` only receives that share POST
+(`/share-target`) and hands the file to the page; it caches nothing. Without the worker the backend
+answers the POST with a redirect home.
+
 ## Use my own bucket
 
-The header button opens "Use my own bucket": S3 endpoint, bucket, region, access key, secret,
+The status chip in the header opens the "Use my own bucket" sheet: S3 endpoint, bucket, region, access key, secret,
 the bucket's public URL and an optional folder, saved in this browser only (`localStorage`).
 "Test and save" picks the mode:
 
@@ -134,19 +139,22 @@ the bucket's public URL and an optional folder, saved in this browser only (`loc
   are never stored or logged. Endpoints must be public `https`; private, loopback and link-local
   addresses are refused, and the connection is pinned to the checked address.
 
-The dialog shows the CORS policy and a one-line `aws s3api put-bucket-cors` command. Below the
-shelf, "In your bucket" lists the folder (thumbnails from the public URL) with copy, open and
-delete. A bucket on a laptop works through a tunnel (`cloudflared tunnel --url
+The sheet shows the CORS policy and a one-line `aws s3api put-bucket-cors` command. With a bucket,
+home becomes "In your bucket": an edge-to-edge grid of the folder (thumbnails from the public URL,
+video marked), with Upload, settings and refresh in the bottom bar; a tile opens the viewer with
+copy, open and delete, and video plays in it. A bucket on a laptop works through a tunnel (`cloudflared tunnel --url
 http://localhost:9000`, `tailscale funnel`); use the tunnel URL for both endpoint and public URL.
 Tested against RustFS 1.0.0 behind a Cloudflare quick tunnel, in both modes.
 
 ## Frontend
 
-The page is a Vite + TypeScript SPA in `frontend/`, styled with Tailwind CSS and Preline
-components, built to `frontend/dist/` and served by the app at `/` (hashed assets under
-`/assets`). Marker.js comes from pinned npm packages and is still loaded lazily — the
-editor bundle only downloads after an image is selected; the free linkware attribution
-remains visible.
+The page is a Vite + TypeScript SPA in `frontend/` with plain CSS on the design tokens
+(`src/style.css`, Figma direction A), built to `frontend/dist/` and served by the app at `/`
+(hashed assets under `/assets`; icons, manifest and service worker from `frontend/public/`).
+Inter and Geist Mono are self-hosted from npm (the CSP allows fonts from 'self' only). Icons are
+Rune Icons outline paths vendored in `src/icons.ts`; see `frontend/THIRD_PARTY_NOTICES.md`.
+Marker.js comes from pinned npm packages and is loaded lazily: the editor bundle only downloads
+when Edit is tapped; the free linkware attribution stays visible.
 
 ```sh
 cd frontend
@@ -161,4 +169,5 @@ so the image stays self-contained.
 ## License
 
 MIT, see `LICENSE`. The image editor is [marker.js](https://markerjs.com) under its free linkware
-license, which requires the visible attribution link the editor shows.
+license, which requires the visible attribution link the editor shows. Icons are Rune Icons (Apache-2.0),
+fonts are Inter and Geist Mono (OFL-1.1); see `frontend/THIRD_PARTY_NOTICES.md`.

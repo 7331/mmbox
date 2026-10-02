@@ -11,3 +11,4 @@ FastAPI + Redis in `backend/`, Vite SPA in `frontend/`, one Compose stack. Read 
 - Names are explicit and long form; signatures are keyword-only past the first argument (ruff enforces it).
 - Git hooks (`.pre-commit-config.yaml`): ruff on commit, the fast gates on push; CI stays the authority. Install with `uv run --project backend pre-commit install`.
 - Design: Figma direction A, calm and photo-first (Inter, one blue accent #0A6CFF / #3D8BFF dark, Rune Icons outline), mobile web first. Logo: candidate 1, Portal's spiral as a box, #80C8EF (owner, 2026-10-02).
+- Frontend: plain CSS on the design tokens (no CSS framework), Inter and Geist Mono self-hosted from npm, Rune Icons vendored in `frontend/src/icons.ts` with `frontend/THIRD_PARTY_NOTICES.md`. The service worker only receives the Android share target and caches nothing (2026-10-02).

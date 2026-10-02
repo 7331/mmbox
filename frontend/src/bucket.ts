@@ -1,7 +1,7 @@
 import { AwsClient } from "aws4fetch";
-import { EXTENSIONS, UPLOAD_TIMEOUT_MILLISECONDS } from "./types";
+import { UPLOAD_TIMEOUT_MILLISECONDS } from "./types";
 import type { PendingUpload } from "./types";
-import { UploadFailure } from "./upload";
+import { UploadFailure, abortRequestOnSignal } from "./upload";
 
 /** A visitor's own S3-compatible bucket. Kept in this browser only; the server never sees it. */
 export interface BucketSettings {
@@ -135,12 +135,14 @@ export function uploadToBucket(
   settings: BucketSettings,
   item: PendingUpload,
   onProgress: (percent: number) => void,
+  abortSignal?: AbortSignal,
 ): Promise<{ key: string; url: string }> {
   const key = objectKey(settings, item.transportName);
   return signedRequest(settings, key, "PUT", item.contentType).then(
     (signed) =>
       new Promise((resolve, reject) => {
         const request = new XMLHttpRequest();
+        abortRequestOnSignal(request, abortSignal, reject);
         request.open("PUT", signed.url);
         request.timeout = UPLOAD_TIMEOUT_MILLISECONDS * 10;
         signed.headers.forEach((value, name) => {
@@ -265,9 +267,11 @@ export function uploadThroughRelay(
   settings: BucketSettings,
   item: PendingUpload,
   onProgress: (percent: number) => void,
+  abortSignal?: AbortSignal,
 ): Promise<{ key: string; url: string }> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
+    abortRequestOnSignal(request, abortSignal, reject);
     request.open("POST", "/api/buckets/upload");
     request.responseType = "json";
     request.timeout = UPLOAD_TIMEOUT_MILLISECONDS;
@@ -298,8 +302,4 @@ export async function listBucket(settings: BucketSettings, continuationToken: st
 
 export async function deleteBucketObject(settings: BucketSettings, key: string): Promise<void> {
   return settings.mode === "relay" ? deleteBucketRelay(settings, key) : deleteFromBucket(settings, key);
-}
-
-export function extensionFor(contentType: string): string {
-  return EXTENSIONS[contentType] || "bin";
 }

@@ -11,6 +11,29 @@ export class UploadFailure extends Error {
   }
 }
 
+/** The visitor pressed Cancel; not an error worth a red toast. */
+export class UploadCancelled extends UploadFailure {
+  constructor() {
+    super("Upload cancelled");
+    this.name = "UploadCancelled";
+  }
+}
+
+/** Aborts the request when the signal fires, and rejects with UploadCancelled. */
+export function abortRequestOnSignal(
+  request: XMLHttpRequest,
+  abortSignal: AbortSignal | undefined,
+  reject: (reason: UploadFailure) => void,
+): void {
+  if (!abortSignal) return;
+  if (abortSignal.aborted) {
+    reject(new UploadCancelled());
+    return;
+  }
+  abortSignal.addEventListener("abort", () => request.abort(), { once: true });
+  request.addEventListener("abort", () => reject(new UploadCancelled()));
+}
+
 export function randomTransportName(contentType: string): string {
   const bytes = crypto.getRandomValues(new Uint8Array(8));
   const token = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -21,9 +44,11 @@ export function sendUpload(
   item: PendingUpload,
   ttl: string,
   onProgress: (percent: number) => void,
+  abortSignal?: AbortSignal,
 ): Promise<UploadApiResponse> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
+    abortRequestOnSignal(request, abortSignal, reject);
     request.open("POST", "/api/upload");
     request.responseType = "json";
     request.timeout = UPLOAD_TIMEOUT_MILLISECONDS;

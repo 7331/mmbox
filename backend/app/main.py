@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
@@ -40,8 +40,22 @@ def create_app() -> FastAPI:
     async def index() -> FileResponse:
         return FileResponse(FRONTEND_DIST / "index.html", headers={"Cache-Control": "no-store, max-age=0"})
 
-    # Registered before the media router, whose `/{media_id}.{extension}` would not match
-    # `/assets/...` anyway (two segments).
+    # The installed web app: its manifest, the share-target service worker (scope `/`, so it must
+    # sit at the root) and the icons. Registered before the media router so `/{id}.{ext}` never sees them.
+    @app.get("/manifest.webmanifest", include_in_schema=False)
+    async def web_app_manifest() -> FileResponse:
+        return FileResponse(FRONTEND_DIST / "manifest.webmanifest", media_type="application/manifest+json")
+
+    @app.get("/service-worker.js", include_in_schema=False)
+    async def service_worker() -> FileResponse:
+        return FileResponse(FRONTEND_DIST / "service-worker.js", headers={"Cache-Control": "no-cache"})
+
+    @app.post("/share-target", include_in_schema=False)
+    async def share_target_without_service_worker() -> RedirectResponse:
+        """The service worker answers shares itself; without it the shared file is dropped, not stored."""
+        return RedirectResponse("/", status_code=303)
+
+    app.mount("/icons", StaticFiles(directory=FRONTEND_DIST / "icons", check_dir=False), name="frontend-icons")
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets", check_dir=False), name="frontend-assets")
     app.include_router(bucket_relay_router)
     app.include_router(media_router)

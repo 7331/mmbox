@@ -1,39 +1,24 @@
 import "./style.css";
-import "preline";
 
-import {
-  ANIMATED_TYPES,
-  DEFAULT_TTL,
-  EXTENSIONS,
-  MAXIMUM_BYTES,
-  THUMBNAIL_EDGE,
-  VIDEO_EXTENSIONS,
-} from "./types";
-import type { PendingUpload, ShelfItem, ShelfRecord, UploadApiResponse } from "./types";
-import {
-  BucketBlockedError,
-  checkBucketRelay,
-  corsCommandFor,
-  corsPolicyFor,
-  loadBucketSettings,
-  normalizeBucketSettings,
-  saveBucketSettings,
-  testBucket,
-  uploadThroughRelay,
-  uploadToBucket,
-} from "./bucket";
-import { initBrowse, showBucket } from "./browse";
+import { ANIMATED_TYPES, DEFAULT_TTL, EXTENSIONS, MAXIMUM_BYTES, THUMBNAIL_EDGE, VIDEO_EXTENSIONS } from "./types";
+import type { PendingUpload, ShelfItem, ShelfRecord } from "./types";
+import { loadBucketSettings, saveBucketSettings, uploadThroughRelay, uploadToBucket } from "./bucket";
 import type { BucketSettings } from "./bucket";
-import { bindHistoryToast, saveRecord } from "./history";
-import { UploadFailure, randomTransportName, sendUpload } from "./upload";
+import { initBrowse, refreshBucket, showBucket } from "./browse";
+import { initBucketSheet, openBucketSheet } from "./bucketSheet";
 import { clickEditorDone, closeMarkerEditor, openMarkerEditor } from "./editor";
 import type { EditorHooks } from "./editor";
+import { formatBytes, formatDayAndTime, formatLinkForDisplay } from "./format";
+import { bindHistoryToast, saveRecord } from "./history";
+import { iconMarkup, renderIconPlaceholders } from "./icons";
+import type { IconName } from "./icons";
 import {
   absoluteUrl,
   copyItem,
   copyText,
   createShelfItem,
-  formatLongDate,
+  deleteShelfItem,
+  describeExpiry,
   initShelf,
   publicLabel,
   restoreShelf,
@@ -41,43 +26,45 @@ import {
   startCountdown,
   uploads,
 } from "./shelf";
+import { UploadCancelled, UploadFailure, randomTransportName, sendUpload } from "./upload";
+import { initViewer } from "./viewer";
 
 const element = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
-const pickerView = element("pickerView");
+const IMAGE_ACCEPT = "image/png,image/jpeg,image/gif,image/webp";
+const IMAGE_AND_VIDEO_ACCEPT = `${IMAGE_ACCEPT},video/mp4,video/webm,video/quicktime`;
+const LIFETIME_STORAGE_KEY = "mmbox.lifetime";
+
+const homeScreen = element("homeScreen");
+const homeBottomBar = element("homeBottomBar");
+const flowScreen = element("flowScreen");
 const selectedView = element("selectedView");
 const progressView = element("progressView");
 const resultView = element("resultView");
 const filePicker = element<HTMLInputElement>("filePicker");
-const ttlSelect = element<HTMLSelectElement>("ttlSelect");
-const selectedImage = element<HTMLImageElement>("selectedImage");
-const selectedNote = element("selectedNote");
-const progressImage = element<HTMLImageElement>("progressImage");
+const flowImage = element<HTMLImageElement>("flowImage");
+const flowVideo = element<HTMLVideoElement>("flowVideo");
+const lifetimeChoices = element("lifetimeChoices");
+const uploadSelectedButton = element<HTMLButtonElement>("uploadSelected");
 const progressFill = element("progressFill");
-const progressText = element("progressText");
-const resultImage = element<HTMLImageElement>("resultImage");
-const resultLink = element("resultLink");
 const dragCover = element("dragCover");
 const toast = element("toast");
+
+type FlowStage = "selected" | "progress" | "result";
 
 let pending: PendingUpload | null = null;
 let bucketSettings: BucketSettings | null = loadBucketSettings();
 let lastResult: ShelfItem | null = null;
+let uploadAbortController: AbortController | null = null;
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+let selectedLifetimeSeconds = storedLifetime();
 
 function storedLifetime(): number {
   try {
-    return Number(localStorage.getItem("mmbox.lifetime")) || DEFAULT_TTL;
+    return Number(localStorage.getItem(LIFETIME_STORAGE_KEY)) || DEFAULT_TTL;
   } catch {
     return DEFAULT_TTL;
   }
-}
-ttlSelect.value = String(storedLifetime());
-
-function showOnly(view: HTMLElement): void {
-  [pickerView, selectedView, progressView, resultView].forEach((candidate) => {
-    candidate.hidden = candidate !== view;
-  });
 }
 
 function say(message: string, tone = ""): void {
@@ -90,24 +77,103 @@ function say(message: string, tone = ""): void {
   }, 2600);
 }
 
-function paintBucketStatus(): void {
-  const active = Boolean(bucketSettings);
-  const relayed = bucketSettings?.mode === "relay";
-  element("bucketStatusText").textContent = active
-    ? `Your bucket: ${bucketSettings!.bucket}${relayed ? " (relayed)" : ""}`
-    : "Temporary storage";
-  element("bucketStatusDot").className = active
-    ? "size-2 rounded-full bg-accent dark:bg-accent-dark"
-    : "size-2 rounded-full bg-line dark:bg-line-dark";
-  element("pickerHint").textContent = !active
-    ? "PNG, JPG, GIF or WEBP · 25 MB max"
-    : relayed
-      ? "PNG, JPG, GIF or WEBP · 25 MB max · relayed to your bucket"
-      : "Images and MP4, WEBM or MOV video · straight into your bucket";
-  element("ttlField").hidden = active;
-  element("forgetBucket").hidden = !active;
+function setButtonContent(button: HTMLButtonElement, icon: IconName, label: string): void {
+  button.innerHTML = iconMarkup(icon);
+  button.append(label);
+}
+
+const isVideoType = (contentType: string): boolean => Boolean(VIDEO_EXTENSIONS[contentType]);
+
+/* ---------- Mode: temporary links or the visitor's bucket ---------- */
+
+function paintMode(): void {
+  const usingBucket = Boolean(bucketSettings);
+  element("bucketStatusText").textContent = usingBucket ? "My bucket" : "Temporary";
+  element("bucketStatusDot").dataset.active = String(usingBucket);
+  element("openBucketSettings").ariaLabel = usingBucket
+    ? `Uploading to your bucket ${bucketSettings!.bucket}${bucketSettings!.mode === "relay" ? " through the relay" : ""}. Change`
+    : "Temporary links. Use my own bucket";
+  element("temporaryDropSection").hidden = usingBucket;
+  element("temporaryActions").hidden = usingBucket;
+  element("bucketActions").hidden = !usingBucket;
+  homeBottomBar.classList.toggle("bottom-bar-chrome", usingBucket);
+  filePicker.accept = bucketSettings?.mode === "direct" ? IMAGE_AND_VIDEO_ACCEPT : IMAGE_ACCEPT;
   showBucket(bucketSettings);
 }
+
+function paintPasteHint(): void {
+  const touchFirst = matchMedia("(pointer: coarse)").matches;
+  if (touchFirst) {
+    element("pasteHint").textContent = "or tap Paste · or share a photo to mmbox";
+    return;
+  }
+  const isApple = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  element("pasteShortcut").textContent = isApple ? "⌘V" : "Ctrl V";
+}
+
+/* ---------- Screens ---------- */
+
+function showFlowStage(stage: FlowStage, { allowEdit = false } = {}): void {
+  if (flowScreen.hidden) {
+    if (!(history.state as { mmboxFlow?: boolean } | null)?.mmboxFlow) history.pushState({ mmboxFlow: true }, "");
+    homeScreen.hidden = true;
+    flowScreen.hidden = false;
+    window.scrollTo(0, 0);
+  }
+  flowScreen.dataset.stage = stage;
+  selectedView.hidden = stage !== "selected";
+  progressView.hidden = stage !== "progress";
+  resultView.hidden = stage !== "result";
+  uploadSelectedButton.hidden = stage !== "selected";
+  element("cancelUpload").hidden = stage !== "progress";
+  element("resultActions").hidden = stage !== "result";
+  element("closeFlow").style.visibility = stage === "progress" ? "hidden" : "";
+  element("editSelected").hidden = stage !== "selected" || !allowEdit;
+  element("newUpload").hidden = stage !== "result";
+  const usingBucket = Boolean(bucketSettings);
+  element("flowTitle").textContent =
+    stage === "selected" ? (usingBucket ? "Upload" : "New link") : stage === "progress" ? (usingBucket ? "Uploading" : "Creating link") : "";
+}
+
+function setFlowMedia(url: string, isVideo: boolean): void {
+  flowImage.hidden = isVideo;
+  flowVideo.hidden = !isVideo;
+  if (isVideo) flowVideo.src = url;
+  else {
+    flowImage.src = url;
+    flowVideo.removeAttribute("src");
+  }
+}
+
+/** Back to the home screen, dropping whatever was picked or uploading. */
+function showHomeAndForgetPending(): void {
+  uploadAbortController?.abort();
+  uploadAbortController = null;
+  revokePending();
+  lastResult = null;
+  filePicker.value = "";
+  flowVideo.removeAttribute("src");
+  flowScreen.hidden = true;
+  homeScreen.hidden = false;
+}
+
+/** Closing the flow from its own buttons goes through history, so the Android back gesture matches. */
+function leaveFlow(): void {
+  if ((history.state as { mmboxFlow?: boolean } | null)?.mmboxFlow) history.back();
+  else showHomeAndForgetPending();
+}
+
+window.addEventListener("popstate", () => {
+  const stillInFlow = (history.state as { mmboxFlow?: boolean } | null)?.mmboxFlow;
+  if (!flowScreen.hidden && !stillInFlow) showHomeAndForgetPending();
+});
+
+function openFilePicker(): void {
+  filePicker.value = "";
+  filePicker.click();
+}
+
+/* ---------- Picking ---------- */
 
 /** Draws a video's first frame for the shelf thumbnail. */
 function firstFrameOf(file: Blob): Promise<ImageBitmap> {
@@ -125,7 +191,7 @@ function firstFrameOf(file: Blob): Promise<ImageBitmap> {
 }
 
 async function thumbnailOf(file: Blob): Promise<Blob | null> {
-  const bitmap = file.type.startsWith("video/") ? await firstFrameOf(file) : await createImageBitmap(file);
+  const bitmap = isVideoType(file.type) ? await firstFrameOf(file) : await createImageBitmap(file);
   const scale = Math.min(1, THUMBNAIL_EDGE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -164,38 +230,80 @@ function revokePending(): void {
   pending = null;
 }
 
-function resetPicker(): void {
-  revokePending();
-  lastResult = null;
-  showOnly(pickerView);
-  filePicker.value = "";
+/** What happens to metadata on the way, for the line under the photo. */
+function privacySummary(contentType: string): string {
+  if (isVideoType(contentType)) return "video is uploaded as-is, metadata included";
+  if (bucketSettings?.mode === "relay") return "metadata stripped by the relay";
+  return "location and camera data removed";
 }
 
-function showSelected(message = "", allowEdit = true, buttonText = "Create link"): void {
+function paintDestination(): void {
+  const usingBucket = Boolean(bucketSettings);
+  element("lifetimeSection").hidden = usingBucket;
+  element("destinationSection").hidden = !usingBucket;
+  const note = element("destinationNote");
+  note.hidden = !usingBucket;
+  if (!bucketSettings || !pending) return;
+  const relayed = bucketSettings.mode === "relay";
+  element("destinationName").textContent = bucketSettings.prefix
+    ? `${bucketSettings.bucket} / ${bucketSettings.prefix}`
+    : bucketSettings.bucket;
+  element("destinationMode").textContent = `Never expires · ${relayed ? "through the mmbox relay" : "direct to your bucket"}`;
+  note.textContent = isVideoType(pending.contentType)
+    ? "Video goes straight to your bucket as-is; its metadata is not removed."
+    : relayed
+      ? "The image passes through this server, which strips it; your keys are sent per request and never stored."
+      : "Still images are re-drawn in the browser first, so EXIF and GPS never leave this device.";
+}
+
+function paintLifetimeExpiry(): void {
+  element("lifetimeExpiry").textContent = `Link stops working ${formatDayAndTime(Date.now() + selectedLifetimeSeconds * 1000)}`;
+}
+
+function selectLifetime(seconds: number): void {
+  selectedLifetimeSeconds = seconds;
+  lifetimeChoices.querySelectorAll<HTMLButtonElement>(".chip").forEach((chip) => {
+    const selected = Number(chip.dataset.seconds) === seconds;
+    chip.setAttribute("aria-checked", String(selected));
+    chip.tabIndex = selected ? 0 : -1;
+  });
+  paintLifetimeExpiry();
+}
+
+function showSelected(message = "", allowEdit = true, tone = ""): void {
   if (!pending) return;
-  selectedImage.src = pending.previewUrl;
-  selectedNote.textContent = message;
-  selectedNote.hidden = !message;
-  element("editSelected").hidden = !allowEdit;
-  element("uploadSelected").textContent = buttonText;
-  showOnly(selectedView);
+  setFlowMedia(pending.previewUrl, isVideoType(pending.contentType));
+  element("selectedInfo").textContent = `${formatBytes(pending.bytes)} · ${privacySummary(pending.contentType)}`;
+  const note = element("selectedNote");
+  note.textContent = message;
+  note.dataset.tone = tone;
+  note.hidden = !message;
+  paintDestination();
+  if (bucketSettings) setButtonContent(uploadSelectedButton, "upload", tone === "bad" ? "Try again" : "Upload to bucket");
+  else setButtonContent(uploadSelectedButton, "link", tone === "bad" ? "Try again" : "Create link");
+  showFlowStage("selected", { allowEdit });
+  if (!bucketSettings) {
+    paintLifetimeExpiry();
+    lifetimeChoices.querySelector<HTMLElement>('[aria-checked="true"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+  }
 }
 
 async function accept(files: FileList | File[] | null): Promise<void> {
-  if (pending) return say("Finish the current image first", "bad");
+  if (pending?.uploading) return say("Wait for the current upload to finish", "bad");
   const offered = [...(files || [])].filter(Boolean);
   if (!offered.length) return;
-  if (offered.length > 1) say("One image at a time on mobile");
+  if (offered.length > 1) say("One file at a time");
   const file = offered[0];
-  const isVideo = Boolean(VIDEO_EXTENSIONS[file.type]);
+  const isVideo = isVideoType(file.type);
   if (bucketSettings?.mode === "relay" && (isVideo || file.size > MAXIMUM_BYTES)) {
     return say("Video and files over 25 MB need CORS on your bucket (see bucket settings)", "bad");
   }
   if (bucketSettings) {
     if (!EXTENSIONS[file.type] && !isVideo) return say("Choose an image or an MP4, WEBM or MOV video", "bad");
   } else if (!EXTENSIONS[file.type] || file.size > MAXIMUM_BYTES) {
-    return say("Choose a PNG, JPG, GIF or WEBP under 25 MB", "bad");
+    return say("Choose a PNG, JPG, GIF or WebP under 25 MB", "bad");
   }
+  revokePending();
   lastResult = null;
   pending = {
     original: file,
@@ -207,50 +315,65 @@ async function accept(files: FileList | File[] | null): Promise<void> {
   };
   if (isVideo) {
     pending.canEdit = false;
-    showSelected("Video is uploaded as-is: its metadata is not removed.", false, "Upload to bucket");
+    showSelected("", false);
     return;
   }
   const animated = ANIMATED_TYPES.has(file.type) && (await isAnimated(file).catch(() => true));
   pending.canEdit = !animated;
-  const buttonText = bucketSettings ? "Upload to bucket" : "Create link";
-  if (animated) {
-    showSelected("Animation will be preserved.", false, buttonText);
-    return;
-  }
-  showSelected("", true, buttonText);
+  showSelected(animated ? "Animation will be preserved." : "", !animated);
 }
 
 const editorHooks: EditorHooks = {
   getPending: () => pending,
-  showSelected,
+  showSelected: (message, allowEdit) => showSelected(message, allowEdit),
   say,
 };
 
+/* ---------- Uploading ---------- */
+
 function setProgress(percent: number): void {
   progressFill.style.width = `${percent}%`;
-  progressText.textContent = `${percent}%`;
-  progressView.querySelector('[role="progressbar"]')!.setAttribute("aria-valuenow", String(percent));
+  element("progressText").textContent = `${percent}%`;
+  element("progressTrack").setAttribute("aria-valuenow", String(percent));
+  if (pending) {
+    element("progressBytes").textContent = `Sending ${formatBytes((pending.bytes * percent) / 100)} of ${formatBytes(pending.bytes)}`;
+  }
+}
+
+function paintProgressPrivacy(contentType: string): void {
+  element("progressPrivacyStep").hidden = isVideoType(contentType);
+  element("progressPrivacyText").textContent = !bucketSettings
+    ? "Metadata is stripped on arrival"
+    : bucketSettings.mode === "relay"
+      ? "Metadata is stripped by the relay"
+      : "Metadata removed in this browser";
 }
 
 async function uploadPending(): Promise<void> {
   if (!pending || pending.uploading) return;
-  pending.uploading = true;
-  progressImage.src = pending.previewUrl;
+  const current = pending;
+  current.uploading = true;
+  uploadAbortController = new AbortController();
+  const abortSignal = uploadAbortController.signal;
+  setFlowMedia(current.previewUrl, isVideoType(current.contentType));
+  paintProgressPrivacy(current.contentType);
   setProgress(0);
-  ttlSelect.disabled = true;
-  showOnly(progressView);
+  showFlowStage("progress");
   try {
     if (bucketSettings) {
       // The relay strips on the server; a direct upload must strip here, since the server never sees it.
-      const stillUntouched = pending.uploadFile === pending.original && EXTENSIONS[pending.contentType] && pending.canEdit;
-      if (stillUntouched && bucketSettings.mode === "direct") pending.uploadFile = await stripStill(pending.original);
+      const stillUntouched = current.uploadFile === current.original && EXTENSIONS[current.contentType] && current.canEdit;
+      if (stillUntouched && bucketSettings.mode === "direct") {
+        current.uploadFile = await stripStill(current.original);
+        current.bytes = current.uploadFile.size;
+      }
       const stored =
         bucketSettings.mode === "relay"
-          ? await uploadThroughRelay(bucketSettings, pending, setProgress)
-          : await uploadToBucket(bucketSettings, pending, setProgress);
+          ? await uploadThroughRelay(bucketSettings, current, setProgress, abortSignal)
+          : await uploadToBucket(bucketSettings, current, setProgress, abortSignal);
       await settleUpload({ id: stored.key, url: stored.url, deleteToken: "", expiresAt: 0, bucketKey: stored.key });
     } else {
-      const body = await sendUpload(pending, ttlSelect.value, setProgress);
+      const body = await sendUpload(current, String(selectedLifetimeSeconds), setProgress, abortSignal);
       await settleUpload({
         id: body.id,
         url: body.url,
@@ -259,13 +382,17 @@ async function uploadPending(): Promise<void> {
       });
     }
   } catch (failure) {
-    pending.uploading = false;
-    ttlSelect.disabled = false;
+    current.uploading = false;
+    uploadAbortController = null;
+    if (pending !== current) return;
+    if (failure instanceof UploadCancelled) {
+      showSelected("Upload cancelled.", current.canEdit);
+      return;
+    }
     const retryAfter = failure instanceof UploadFailure ? failure.retryAfter : 0;
     const wait = retryAfter ? ` Try again in ${retryAfter} seconds.` : "";
     const message = (failure as Error).message;
-    showSelected(`${message}.${wait}`, pending.canEdit, "Try again");
-    say(message, "bad");
+    showSelected(`${message}.${wait}`, current.canEdit, "bad");
   }
 }
 
@@ -274,6 +401,7 @@ type StoredUpload = Pick<ShelfRecord, "id" | "url" | "deleteToken" | "expiresAt"
 async function settleUpload(stored: StoredUpload): Promise<void> {
   const current = pending;
   if (!current) return;
+  uploadAbortController = null;
   const item: ShelfItem = {
     ...stored,
     createdAt: Date.now(),
@@ -301,148 +429,142 @@ async function settleUpload(stored: StoredUpload): Promise<void> {
   });
   uploads.set(item.id, item);
   createShelfItem(item, true);
-  URL.revokeObjectURL(current.previewUrl);
-  pending = null;
-  ttlSelect.disabled = false;
+  // The result keeps showing the picked file until the visitor leaves; it is revoked then.
   lastResult = item;
-  resultImage.src = item.previewUrl;
-  resultLink.textContent = absoluteUrl(item);
-  element("resultExpiry").textContent = item.expiresAt
-    ? `Expires ${formatLongDate(item.expiresAt)}`
-    : `In your bucket, never expires`;
+  current.uploading = false;
+  element("resultLink").textContent = formatLinkForDisplay(absoluteUrl(item));
+  element("resultLink").title = absoluteUrl(item);
   element("resultShare").hidden = !navigator.share;
-  showOnly(resultView);
+  paintResultExpiry();
+  element("resultCopyState").textContent = "";
+  showFlowStage("result");
   const copied = await copyText(absoluteUrl(item));
-  say(copied ? "Uploaded and link copied" : "Upload complete");
-  if (item.bucketKey) showBucket(bucketSettings);
+  element("resultCopyState").textContent = copied ? "Copied to clipboard" : "Tap Copy link to copy it";
+  if (item.bucketKey) refreshBucket();
 }
 
-bindHistoryToast(say);
-initShelf({ say, resetPicker, getLastResult: () => lastResult });
-initBrowse({ say, copyText });
-paintBucketStatus();
-
-const bucketDialog = element<HTMLDialogElement>("bucketDialog");
-const bucketForm = element<HTMLFormElement>("bucketForm");
-const bucketMessage = element("bucketMessage");
-element("corsPolicy").textContent = corsPolicyFor(location.origin);
-const paintCorsCommand = (): void => {
-  element("corsCommand").textContent = corsCommandFor(bucketFormSettings(), location.origin);
-};
-bucketForm.addEventListener("input", paintCorsCommand);
-
-function bucketFormSettings(): BucketSettings {
-  const data = new FormData(bucketForm);
-  const field = (name: string): string => String(data.get(name) ?? "");
-  return normalizeBucketSettings({
-    endpoint: field("endpoint"),
-    bucket: field("bucket"),
-    region: field("region"),
-    accessKeyId: field("accessKeyId"),
-    secretAccessKey: field("secretAccessKey"),
-    publicBase: field("publicBase"),
-    prefix: field("prefix"),
-  });
+function paintResultExpiry(): void {
+  if (lastResult) element("resultExpiry").textContent = describeExpiry(lastResult);
 }
 
-function tellBucket(message: string, tone = ""): void {
-  bucketMessage.textContent = message;
-  bucketMessage.dataset.tone = tone;
-}
+/* ---------- Paste, drop, share target ---------- */
 
-/** Direct first; when the bucket blocks the browser (no CORS), try the relay. Returns the working mode. */
-async function runBucketTest(settings: BucketSettings): Promise<BucketSettings["mode"] | null> {
-  const buttons = [element<HTMLButtonElement>("testBucket"), element<HTMLButtonElement>("saveBucket")];
-  buttons.forEach((button) => (button.disabled = true));
-  tellBucket("Writing and removing a test object…");
+async function pasteFromClipboard(): Promise<void> {
+  if (!navigator.clipboard?.read) {
+    say("Paste is not available here; press Ctrl V or ⌘V instead", "bad");
+    return;
+  }
   try {
-    await testBucket(settings);
-    tellBucket("Works directly from this browser: any size, video included.");
-    return "direct";
-  } catch (failure) {
-    if (!(failure instanceof BucketBlockedError)) {
-      tellBucket((failure as Error).message, "bad");
-      return null;
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const imageType = item.types.find((type) => type.startsWith("image/"));
+      if (!imageType) continue;
+      const blob = await item.getType(imageType);
+      void accept([new File([blob], `pasted.${EXTENSIONS[imageType] ?? "png"}`, { type: imageType })]);
+      return;
     }
-  }
-  try {
-    tellBucket("No CORS on the bucket; trying the mmbox relay…");
-    await checkBucketRelay(settings);
-    tellBucket("Works through the mmbox relay (images up to 25 MB). Add CORS below for video and direct uploads.");
-    return "relay";
-  } catch (failure) {
-    tellBucket(`Neither direct nor relayed access worked: ${(failure as Error).message}`, "bad");
-    return null;
-  } finally {
-    buttons.forEach((button) => (button.disabled = false));
+    say("No image on the clipboard", "bad");
+  } catch {
+    say("Could not read the clipboard", "bad");
   }
 }
 
-element("openBucketSettings").addEventListener("click", () => {
-  const current = bucketSettings;
-  (Object.keys(bucketFormSettings()) as (keyof BucketSettings)[]).forEach((name) => {
-    const input = bucketForm.elements.namedItem(name) as HTMLInputElement | null;
-    if (input) input.value = current?.[name] ?? "";
+/** Files shared to the installed app arrive from the service worker after a redirect to `/?shared=1`. */
+function receiveSharedFile(): void {
+  if (!("serviceWorker" in navigator) || !new URLSearchParams(location.search).has("shared")) return;
+  history.replaceState(null, "", "/");
+  navigator.serviceWorker.addEventListener("message", (event: MessageEvent<{ type?: string; file?: File | null }>) => {
+    if (event.data?.type !== "shared-file") return;
+    if (event.data.file) void accept([event.data.file]);
+    else say("Nothing to upload in that share", "bad");
   });
-  tellBucket("");
-  paintCorsCommand();
-  bucketDialog.showModal();
-});
-element("cancelBucket").addEventListener("click", () => bucketDialog.close());
-element("copyCorsPolicy").addEventListener("click", () => {
-  void copyText(corsPolicyFor(location.origin)).then((copied) => say(copied ? "Policy copied" : "Could not copy", copied ? "" : "bad"));
-});
-element("copyCorsCommand").addEventListener("click", () => {
-  void copyText(corsCommandFor(bucketFormSettings(), location.origin)).then((copied) =>
-    say(copied ? "Command copied" : "Could not copy", copied ? "" : "bad"),
-  );
-});
-element("testBucket").addEventListener("click", () => {
-  if (bucketForm.reportValidity()) void runBucketTest(bucketFormSettings());
-});
-bucketForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const settings = bucketFormSettings();
-  void runBucketTest(settings).then((mode) => {
-    if (!mode) return;
-    settings.mode = mode;
-    bucketSettings = settings;
-    saveBucketSettings(settings);
-    paintBucketStatus();
-    bucketDialog.close();
-    say(mode === "relay" ? `Relaying to ${settings.bucket}` : `Uploading to ${settings.bucket}`);
+  navigator.serviceWorker.startMessages();
+  void navigator.serviceWorker.ready.then((registration) => {
+    (navigator.serviceWorker.controller ?? registration.active)?.postMessage("share-ready");
   });
-});
-element("forgetBucket").addEventListener("click", () => {
-  bucketSettings = null;
-  saveBucketSettings(null);
-  paintBucketStatus();
-  bucketDialog.close();
-  say("Back to temporary storage");
-});
+}
 
-ttlSelect.addEventListener("change", () => {
+function registerServiceWorker(): void {
+  if (!("serviceWorker" in navigator)) return;
+  void navigator.serviceWorker.register("/service-worker.js").catch((failure: unknown) => {
+    console.warn("mmbox: service worker unavailable", failure);
+  });
+}
+
+/* ---------- Wiring ---------- */
+
+function applyBucketSettings(settings: BucketSettings | null): void {
+  bucketSettings = settings;
+  saveBucketSettings(settings);
+  paintMode();
+  if (!flowScreen.hidden && pending && !pending.uploading) showSelected("", pending.canEdit);
+}
+
+renderIconPlaceholders();
+bindHistoryToast(say);
+initShelf({
+  say,
+  onShelfItemRemoved: (item) => {
+    if (lastResult?.id === item.id) leaveFlow();
+  },
+});
+initBrowse({ say });
+initViewer({ say, copyText });
+initBucketSheet({ say, copyText, currentSettings: () => bucketSettings, applySettings: applyBucketSettings });
+paintMode();
+paintPasteHint();
+selectLifetime(selectedLifetimeSeconds);
+
+lifetimeChoices.addEventListener("click", (event) => {
+  const chip = (event.target as HTMLElement).closest<HTMLButtonElement>(".chip");
+  if (!chip) return;
+  selectLifetime(Number(chip.dataset.seconds));
   try {
-    localStorage.setItem("mmbox.lifetime", ttlSelect.value);
+    localStorage.setItem(LIFETIME_STORAGE_KEY, String(selectedLifetimeSeconds));
   } catch {
     /* Selection still works for this tab. */
   }
 });
+lifetimeChoices.addEventListener("keydown", (event) => {
+  if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+  const chips = [...lifetimeChoices.querySelectorAll<HTMLButtonElement>(".chip")];
+  const index = chips.findIndex((chip) => chip.getAttribute("aria-checked") === "true");
+  const next = chips[Math.max(0, Math.min(chips.length - 1, index + (event.key === "ArrowRight" ? 1 : -1)))];
+  next.click();
+  next.focus();
+  event.preventDefault();
+});
+
 filePicker.addEventListener("change", () => void accept(filePicker.files));
-element("changeSelected").addEventListener("click", () => {
-  resetPicker();
-  filePicker.click();
+element("dropZone").addEventListener("click", openFilePicker);
+element("choosePhoto").addEventListener("click", openFilePicker);
+element("uploadToBucket").addEventListener("click", openFilePicker);
+element("pasteFromClipboard").addEventListener("click", () => void pasteFromClipboard());
+element("openBucketSettings").addEventListener("click", openBucketSheet);
+element("openBucketSettingsFromBar").addEventListener("click", openBucketSheet);
+element("changeDestination").addEventListener("click", openBucketSheet);
+element("refreshBucket").addEventListener("click", refreshBucket);
+
+element("closeFlow").addEventListener("click", leaveFlow);
+element("newUpload").addEventListener("click", () => {
+  leaveFlow();
+  openFilePicker();
 });
 element("editSelected").addEventListener("click", () => void openMarkerEditor(editorHooks));
-element("uploadSelected").addEventListener("click", () => void uploadPending());
+uploadSelectedButton.addEventListener("click", () => void uploadPending());
+element("cancelUpload").addEventListener("click", () => uploadAbortController?.abort());
 element("cancelEditor").addEventListener("click", () => closeMarkerEditor(editorHooks));
 element("doneEditor").addEventListener("click", clickEditorDone);
-element("uploadAnother").addEventListener("click", () => {
-  resetPicker();
-  filePicker.click();
+element("resultCopy").addEventListener("click", () => {
+  if (lastResult) {
+    void copyItem(lastResult).then((copied) => {
+      if (copied) element("resultCopyState").textContent = "Copied to clipboard";
+    });
+  }
 });
-element("resultCopy").addEventListener("click", () => lastResult && void copyItem(lastResult));
+element("resultCopyIcon").addEventListener("click", () => element("resultCopy").click());
 element("resultShare").addEventListener("click", () => lastResult && void shareItem(lastResult));
+element("resultDelete").addEventListener("click", () => lastResult && void deleteShelfItem(lastResult));
 
 let dragDepth = 0;
 document.addEventListener("dragenter", (event) => {
@@ -462,8 +584,9 @@ document.addEventListener("drop", (event) => {
   void accept(event.dataTransfer?.files || []);
 });
 document.addEventListener("paste", (event) => {
+  if ((event.target as HTMLElement).closest?.("input, textarea")) return;
   const files = [...(event.clipboardData?.items || [])]
-    .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+    .filter((item) => item.kind === "file" && (item.type.startsWith("image/") || item.type.startsWith("video/")))
     .map((item) => item.getAsFile())
     .filter((file): file is File => Boolean(file));
   if (!files.length) return;
@@ -471,5 +594,10 @@ document.addEventListener("paste", (event) => {
   void accept(files);
 });
 
-startCountdown();
+startCountdown(() => {
+  if (flowScreen.dataset.stage === "selected" && !flowScreen.hidden && !bucketSettings) paintLifetimeExpiry();
+  if (flowScreen.dataset.stage === "result" && !flowScreen.hidden) paintResultExpiry();
+});
+registerServiceWorker();
+receiveSharedFile();
 void restoreShelf();

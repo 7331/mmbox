@@ -7,7 +7,7 @@ type MarkerUiModule = typeof import("@markerjs/markerjs-ui");
 
 export interface EditorHooks {
   getPending(): PendingUpload | null;
-  showSelected(message?: string, allowEdit?: boolean, buttonText?: string): void;
+  showSelected(message?: string, allowEdit?: boolean): void;
   say(message: string, tone?: string): void;
 }
 
