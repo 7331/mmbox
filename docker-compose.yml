@@ -20,7 +20,6 @@ services:
     image: mmbox-app:${MMBOX_TAG:-latest}
     environment:
       REDIS_URL: redis://redis:6379/0
-      TRUSTED_CLIENT_IP_HEADER: ${TRUSTED_CLIENT_IP_HEADER:-}
     depends_on:
       redis:
         condition: service_healthy

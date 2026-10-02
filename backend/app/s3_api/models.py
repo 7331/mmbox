@@ -1,6 +1,21 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, SecretStr
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, HttpUrl, SecretStr
+
+# S3 caps a key at 1024 bytes of UTF-8, not characters, so max_length alone would let a long non-ASCII key through.
+S3_KEY_MAX_BYTES = 1024
+
+
+def require_s3_key_length(value: str) -> str:
+    if len(value.encode()) > S3_KEY_MAX_BYTES:
+        message = f"longer than {S3_KEY_MAX_BYTES} bytes"
+        raise ValueError(message)
+    return value
+
+
+ObjectKey = Annotated[str, Field(min_length=1), AfterValidator(require_s3_key_length)]
+KeyPrefix = Annotated[str, AfterValidator(require_s3_key_length)]
 
 
 class S3Connection(BaseModel):
@@ -18,7 +33,7 @@ class S3Connection(BaseModel):
 class ObjectSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    key: str
+    key: ObjectKey
     size_bytes: int
     last_modified_at: datetime
 
@@ -34,7 +49,8 @@ class S3Request(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     method: str
-    key: str
+    # Empty for bucket-level calls (list).
+    key: KeyPrefix
     body: bytes = b""
     headers: dict[str, str] = Field(default_factory=dict)
     query: dict[str, str] = Field(default_factory=dict)

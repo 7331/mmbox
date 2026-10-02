@@ -25,9 +25,8 @@ RUN --mount=type=bind,source=backend/uv.lock,target=uv.lock \
     --mount=type=bind,source=backend/pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --no-dev --no-editable
 
-# Project layer: hatchling needs the package and the readme pyproject references.
+# Project layer: hatchling needs the package.
 COPY backend/app ./app
-COPY backend/README.md ./README.md
 RUN --mount=type=bind,source=backend/uv.lock,target=uv.lock \
     --mount=type=bind,source=backend/pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-dev --no-editable

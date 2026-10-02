@@ -32,6 +32,9 @@ dev = [
     # 1.x floor, not 0.25: the 0.23→1.0 line changed fixture loop-scope semantics and renamed the
     # asyncio marker's `scope` argument to `loop_scope`. A 0.x resolution would silently differ.
     "pytest-asyncio>=1.3",
+    # Every test has a deadline; order is shuffled (seed printed, replay with -p randomly --randomly-seed=<n>).
+    "pytest-timeout>=2.4",
+    "pytest-randomly>=4.0",
     # Formatting
     "ruff>=0.15",
     # Type checking
@@ -57,6 +60,7 @@ asyncio_default_fixture_loop_scope = "session"
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = ["-ra"]
+timeout = "60"
 
 [tool.ruff]
 line-length = 120

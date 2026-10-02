@@ -35,9 +35,9 @@ TTL allow-list (seconds): 300, 900, 1800, 3600, 10800, 21600, 43200, 86400.
 Errors are always `{"code", "message"}`: `invalid_type`/`invalid_image`/
 `invalid_request` (400, also for a ttl outside the allow-list or a malformed id), `too_large` (413), `not_found` (404), `rate_limited` (429, with `Retry-After`).
 
-Rate limits are per client IP (the socket peer, or the header named by
-`TRUSTED_CLIENT_IP_HEADER` when a proxy you control sets it, e.g. `CF-Connecting-IP` behind
-Cloudflare), fixed windows counted in Redis:
+Rate limits are per client IP (an IPv6 client's /64): the TCP peer, or the header
+`PROXY_CLIENT_IP_HEADER` (default `CF-Connecting-IP`) when the peer is listed in
+`PROXY_TRUSTED_CIDRS`. Fixed windows counted in Redis:
 30 uploads/hour and 120 fetches/minute by default (`RATE_LIMITS_UPLOADS_PER_HOUR`,
 `RATE_LIMITS_FETCHES_PER_MINUTE`).
 

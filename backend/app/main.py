@@ -1,5 +1,3 @@
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -8,8 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
 from app.bucket_relay.router import router as bucket_relay_router
-from app.lifespan.composition import build_services
-from app.lifespan.resources import open_resources
+from app.lifespan.lifespan import lifespan
 from app.media.router import router as media_router
 from app.redis.errors import register_redis_error_handler
 from app.shared.errors import register_error_handlers
@@ -25,13 +22,6 @@ class HealthResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     status: str
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    async with open_resources() as resources:
-        app.state.services = build_services(resources)
-        yield
 
 
 def create_app() -> FastAPI:
