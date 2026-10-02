@@ -1,0 +1,115 @@
+@import "tailwindcss";
+@source "../node_modules/preline/dist/*.js";
+@import "../node_modules/preline/variants.css";
+
+@theme {
+  --color-page: #f2f3ef;
+  --color-page-dark: #111310;
+  --color-surface: #ffffff;
+  --color-surface-dark: #191c17;
+  --color-surface2: #e8ebe4;
+  --color-surface2-dark: #242820;
+  --color-ink: #171a16;
+  --color-ink-dark: #f1f4ed;
+  --color-muted: #6a7167;
+  --color-muted-dark: #9aa294;
+  --color-line: #d4d9cf;
+  --color-line-dark: #30352c;
+  --color-accent: #1fca73;
+  --color-accent-dark: #43dc8b;
+  --color-accent-ink: #092b18;
+  --color-danger: #c53e3e;
+  --color-danger-dark: #ff7770;
+  --color-danger-soft: #fae6e4;
+  --color-danger-soft-dark: #3a201e;
+
+  --animate-item-in: item-in 0.22s ease both;
+
+  @keyframes item-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    min-width: 300px;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, #1fca73 72%, transparent);
+    outline-offset: 2px;
+  }
+
+  dialog {
+    margin: auto;
+    padding: 0;
+    max-width: none;
+    background: transparent;
+  }
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.56);
+    backdrop-filter: blur(3px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Expired shelf rows: greyed thumb, muted name, disabled actions. */
+  .shelf-item[data-expired="true"] .thumb img {
+    filter: grayscale(1);
+    opacity: 0.48;
+  }
+  .shelf-item[data-expired="true"] .item-name {
+    color: var(--color-muted);
+  }
+  @media (prefers-color-scheme: dark) {
+    .shelf-item[data-expired="true"] .item-name {
+      color: var(--color-muted-dark);
+    }
+  }
+  .shelf-item[data-expired="true"] [data-action="copy"],
+  .shelf-item[data-expired="true"] [data-action="share"],
+  .shelf-item[data-expired="true"] [data-action="download"] {
+    opacity: 0.32;
+    pointer-events: none;
+  }
+
+  .thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  #markerHost > * {
+    width: 100%;
+    height: 100%;
+  }
+}

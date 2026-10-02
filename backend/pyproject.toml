@@ -1,0 +1,150 @@
+[project]
+name = "mmbox"
+version = "0.1.0"
+description = "Ephemeral image/gif host — upload, get a raw URL, it expires"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.116",
+    "uvicorn[standard]>=0.35",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.10",
+    "redis>=6.2",
+    "pillow>=12.0",
+    "structlog>=25.4",
+    # Multipart form data (required by FastAPI for UploadFile).
+    "python-multipart>=0.0.9",
+    "httpx>=0.28",
+    "botocore>=1.40",
+    "defusedxml>=0.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[dependency-groups]
+dev = [
+    # Testing
+    "pytest>=9.0",
+    # 1.x floor, not 0.25: the 0.23→1.0 line changed fixture loop-scope semantics and renamed the
+    # asyncio marker's `scope` argument to `loop_scope`. A 0.x resolution would silently differ.
+    "pytest-asyncio>=1.3",
+    # Formatting
+    "ruff>=0.15",
+    # Type checking
+    "ty>=0.0.61",
+    # Code quality
+    "codespell>=2.3",
+    "import-linter>=2.5",
+    "deptry>=0.23",
+    "vulture>=2.14",
+    # Security
+    "pip-audit>=2.7",
+]
+
+[tool.pytest]
+minversion = "9.0"
+# One key enabling strict_config, strict_markers, strict_xfail and strict_parametrization_ids: a typo'd
+# marker or ini key becomes an error instead of a silent no-op, and an xfail that starts passing fails.
+strict = true
+# A DeprecationWarning scrolled past is a future breakage with a date on it.
+filterwarnings = ["error"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-ra"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W", "I", "N", "UP", "ASYNC", "S", "BLE", "B", "C4", "DTZ",
+    "EM", "G", "PIE", "PT", "RET", "SIM", "ARG", "PTH", "ERA", "PL", "TRY",
+    "PERF", "FURB", "LOG", "RUF", "ANN",
+]
+ignore = ["E501"]
+# PLR0917 (keyword-only parameters) is a preview rule; only the rules named here opt into preview.
+preview = true
+explicit-preview-rules = true
+extend-select = ["PLR0917"]
+
+[tool.ruff.lint.pylint]
+# Keyword-only parameters: at most one positional subject besides self.
+max-positional-args = 1
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+force-sort-within-sections = true
+
+[tool.ruff.lint.per-file-ignores]
+# Asserts are the assertion mechanism of a test; fixtures receive args they don't always use; magic
+# values (TTLs, byte counts) are the thing under test, not a smell.
+"tests/**" = ["S101", "S105", "S106", "ARG", "PLR2004", "ANN"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.codespell]
+skip = ".git,.venv,.pytest_cache,.ruff_cache,*.lock"
+check-filenames = true
+
+[[tool.ty.overrides]]
+# Test fixtures and monkeypatched doubles are intentionally loosely typed: the suite reaches into
+# attributes the real classes only gain at runtime and passes deliberately wrong shapes to assert the
+# error path. The strict bar targets app code, not the scaffolding that exercises it.
+include = ["tests/**"]
+
+[tool.ty.overrides.rules]
+unresolved-attribute = "ignore"
+invalid-argument-type = "ignore"
+
+[tool.ty.environment]
+python-version = "3.14"
+
+# ty has no strict preset; the strict bar is assembled here. The no-`Any` half of it lives in ruff's ANN
+# rules, which ty's own migration guide points to for annotation coverage.
+[tool.ty.rules]
+possibly-unresolved-reference = "error"
+possibly-missing-attribute = "error"
+possibly-missing-import = "error"
+unused-ignore-comment = "warn"
+
+[tool.importlinter]
+root_package = "app"
+
+[[tool.importlinter.contracts]]
+name = "Layers: entry, wiring, domains, infrastructure, shared"
+type = "layers"
+layers = [
+    "app.main",
+    "app.lifespan",
+    "app.bucket_relay",
+    "app.media",
+    "app.rate_limits",
+    "app.s3_api | app.redis",
+    "app.shared",
+]
+ignore_imports = [
+    # Request-scoped injection is an entry point: it reads services through the one accessor.
+    "app.media.dependencies -> app.lifespan.dependencies",
+    "app.bucket_relay.dependencies -> app.lifespan.dependencies",
+    "app.rate_limits.dependencies -> app.lifespan.dependencies",
+]
+
+[tool.deptry.per_rule_ignores]
+# uvicorn is the process (CMD), python-multipart is loaded by FastAPI for Form/File.
+DEP002 = ["uvicorn", "python-multipart"]
+
+[tool.vulture]
+paths = ["app"]
+min_confidence = 80
