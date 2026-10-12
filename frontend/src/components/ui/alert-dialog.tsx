@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import { cn } from "cn"
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui"
@@ -150,7 +148,7 @@ function AlertDialogDescription({
 function AlertDialogAction({
   className,
   variant = "default",
-  size = "touch",
+  size = "default",
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
   Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
@@ -168,7 +166,7 @@ function AlertDialogAction({
 function AlertDialogCancel({
   className,
   variant = "outline",
-  size = "touch",
+  size = "default",
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> &
   Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {

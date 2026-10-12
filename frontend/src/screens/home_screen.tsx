@@ -7,7 +7,7 @@ import { BucketObjectGrid } from "@/components/bucket_object_grid"
 import { DeviceUploadShelf } from "@/components/device_upload_shelf"
 import { PageColumn } from "@/components/page_column"
 import { SiteTopBar } from "@/components/site_top_bar"
-import { Button } from "@/components/ui/button"
+import { ApplicationButton } from "@/components/application_button"
 import type { useBucketListing } from "@/hooks/use_bucket_listing"
 import { useMediaQuery } from "@/hooks/use_media_query"
 import type { BucketSettings } from "@/lib/bucket_connection"
@@ -22,7 +22,7 @@ function BucketStatusChip({ bucketSettings, onOpenBucketSheet }: { bucketSetting
     ? `Uploading to your bucket ${bucketSettings.bucket}${bucketSettings.mode === "relay" ? " through the relay" : ""}. Change`
     : "Temporary links. Use my own bucket"
   return (
-    <Button
+    <ApplicationButton
       id="open_bucket_settings_button"
       variant="outline"
       size="touch"
@@ -34,7 +34,7 @@ function BucketStatusChip({ bucketSettings, onOpenBucketSheet }: { bucketSetting
       <span aria-hidden="true" className={cn("size-2 rounded-full", bucketSettings ? "bg-success" : "bg-muted-foreground")} />
       <span id="bucket_status_text">{bucketSettings ? "My bucket" : "Temporary"}</span>
       <ChevronDown className="text-muted-foreground" />
-    </Button>
+    </ApplicationButton>
   )
 }
 
@@ -62,14 +62,14 @@ export function HomeScreen({
   const pointerIsCoarse = useMediaQuery("(pointer: coarse)")
   const homeFooter = bucketSettings ? (
     <div className="grid grid-cols-[auto_1fr_auto] gap-2">
-      <Button id="open_bucket_settings_from_bar_button" variant="outline" size="xl" className="w-13 px-0" aria-label="Bucket settings" onClick={onOpenBucketSheet}>
+      <ApplicationButton id="open_bucket_settings_from_bar_button" variant="outline" size="xl" className="w-13 px-0" aria-label="Bucket settings" onClick={onOpenBucketSheet}>
         <Settings />
-      </Button>
-      <Button id="upload_to_bucket_button" size="xl" onClick={onChooseFile}>
+      </ApplicationButton>
+      <ApplicationButton id="upload_to_bucket_button" size="xl" onClick={onChooseFile}>
         <Upload />
         Upload
-      </Button>
-      <Button
+      </ApplicationButton>
+      <ApplicationButton
         id="refresh_bucket_button"
         variant="outline"
         size="xl"
@@ -79,18 +79,18 @@ export function HomeScreen({
         onClick={bucketListing.refreshBucketListing}
       >
         <RefreshCw className={cn(bucketListing.isLoadingBucketPage && "motion-safe:animate-spin")} />
-      </Button>
+      </ApplicationButton>
     </div>
   ) : (
     <div className="grid grid-cols-[auto_1fr] gap-2">
-      <Button id="paste_from_clipboard_button" variant="outline" size="xl" onClick={onPasteFromClipboard}>
+      <ApplicationButton id="paste_from_clipboard_button" variant="outline" size="xl" onClick={onPasteFromClipboard}>
         <ClipboardPaste />
         Paste
-      </Button>
-      <Button id="choose_photo_button" size="xl" onClick={onChooseFile}>
+      </ApplicationButton>
+      <ApplicationButton id="choose_photo_button" size="xl" onClick={onChooseFile}>
         <ImagePlus />
         Choose photo
-      </Button>
+      </ApplicationButton>
     </div>
   )
 

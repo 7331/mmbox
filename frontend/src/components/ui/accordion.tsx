@@ -60,9 +60,7 @@ function AccordionContent({
   return (
     <AccordionPrimitive.Content
       data-slot="accordion-content"
-      // -mx-3 px-3: the clip box reaches 12 px past the content, so a 44 px hit area or a focus ring at its edge isn't
-      // cut off while the content stays where it was (UX-045, 2026-10-12).
-      className="-mx-3 overflow-hidden px-3 text-sm data-open:animate-accordion-down data-closed:animate-accordion-up"
+      className="overflow-hidden text-sm data-open:animate-accordion-down data-closed:animate-accordion-up"
       {...props}
     >
       <div

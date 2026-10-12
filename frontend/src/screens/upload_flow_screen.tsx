@@ -10,7 +10,7 @@ import { OneLineLinkText } from "@/components/one_line_link_text"
 import { PageColumn } from "@/components/page_column"
 import { TapToCopyButton } from "@/components/tap_to_copy_button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { ApplicationButton } from "@/components/application_button"
 import { Progress } from "@/components/ui/progress"
 import type { UploadFlowNote, UploadFlowStage } from "@/hooks/use_upload_flow"
 import { buildAbsoluteUrl, describeShelfItemExpiry } from "@/hooks/use_upload_shelf"
@@ -103,9 +103,9 @@ export function UploadFlowScreen({
   onDeleteResult(): void
 }) {
   const closeButton = (
-    <Button id="close_flow_button" variant="ghost" size="touch" className="-ml-3.5 w-11 px-0" aria-label="Close" onClick={onCloseFlow}>
+    <ApplicationButton id="close_flow_button" variant="ghost" size="touch" className="-ml-3.5 w-11 px-0" aria-label="Close" onClick={onCloseFlow}>
       <X className="size-5" />
-    </Button>
+    </ApplicationButton>
   )
   const usingBucket = Boolean(bucketSettings)
   const failedBefore = uploadFlowNote?.tone === "error"
@@ -121,19 +121,19 @@ export function UploadFlowScreen({
             leading={closeButton}
             trailing={
               pendingUpload.canEdit ? (
-                <Button id="edit_selected_button" variant="ghost" size="touch" className="-mr-3.5" onClick={onOpenEditor}>
+                <ApplicationButton id="edit_selected_button" variant="ghost" size="touch" className="-mr-3.5" onClick={onOpenEditor}>
                   <Pencil />
                   Edit
-                </Button>
+                </ApplicationButton>
               ) : null
             }
           />
         }
         footer={
-          <Button id="upload_selected_button" size="xl" className="w-full" disabled={!usingBucket && !customLifetimeIsValid} onClick={onUploadPendingFile}>
+          <ApplicationButton id="upload_selected_button" size="xl" className="w-full" disabled={!usingBucket && !customLifetimeIsValid} onClick={onUploadPendingFile}>
             {usingBucket ? <Upload /> : <LinkIcon />}
             {failedBefore ? "Try again" : usingBucket ? "Upload to bucket" : "Create link"}
-          </Button>
+          </ApplicationButton>
         }
       >
         <div className="flex flex-col gap-4 pt-2">
@@ -163,9 +163,9 @@ export function UploadFlowScreen({
                   <span id="destination_name" className="min-w-0 flex-1 truncate text-[15px] font-medium">
                     {describeBucketPlace(bucketSettings)}
                   </span>
-                  <Button id="change_destination_button" variant="ghost" size="touch" onClick={onChangeDestination}>
+                  <ApplicationButton id="change_destination_button" variant="ghost" size="touch" onClick={onChangeDestination}>
                     Change
-                  </Button>
+                  </ApplicationButton>
                 </div>
                 <div className="flex min-h-12 items-center gap-3 px-4 text-sm text-muted-foreground">
                   <CircleCheck className="size-5 shrink-0" />
@@ -195,9 +195,9 @@ export function UploadFlowScreen({
       <PageColumn
         topBar={<UploadFlowTopBar title={usingBucket ? "Uploading" : "Creating link"} leading={<span className="block size-11" />} trailing={null} />}
         footer={
-          <Button id="cancel_upload_button" variant="outline" size="xl" className="w-full" onClick={onCancelUpload}>
+          <ApplicationButton id="cancel_upload_button" variant="outline" size="xl" className="w-full" onClick={onCancelUpload}>
             Cancel
-          </Button>
+          </ApplicationButton>
         }
       >
         <div className="flex flex-col gap-4 pt-2">
@@ -232,25 +232,25 @@ export function UploadFlowScreen({
           title=""
           leading={closeButton}
           trailing={
-            <Button id="new_upload_button" variant="ghost" size="touch" className="-mr-3.5" onClick={onStartNewUpload}>
+            <ApplicationButton id="new_upload_button" variant="ghost" size="touch" className="-mr-3.5" onClick={onStartNewUpload}>
               <Plus />
               New
-            </Button>
+            </ApplicationButton>
           }
         />
       }
       footer={
         <div className={canOpenShareSheet() ? "grid grid-cols-2 gap-2" : "grid"}>
           {canOpenShareSheet() ? (
-            <Button id="share_result_button" variant="outline" size="xl" onClick={onShareResultLink}>
+            <ApplicationButton id="share_result_button" variant="outline" size="xl" onClick={onShareResultLink}>
               <Share />
               Share
-            </Button>
+            </ApplicationButton>
           ) : null}
-          <Button id="copy_result_button" size="xl" onClick={onCopyResultLink}>
+          <ApplicationButton id="copy_result_button" size="xl" onClick={onCopyResultLink}>
             <LinkIcon />
             Copy link
-          </Button>
+          </ApplicationButton>
         </div>
       }
     >
@@ -286,9 +286,9 @@ export function UploadFlowScreen({
               <span id="result_expiry" className="text-[13px] text-muted-foreground">
                 {describeShelfItemExpiry(uploadedShelfItem, currentTime)}
               </span>
-              <Button id="delete_result_button" variant="ghost" size="touch" className="-mr-3.5 shrink-0 text-destructive hover:text-destructive" onClick={onDeleteResult}>
+              <ApplicationButton id="delete_result_button" variant="ghost" size="touch" className="-mr-3.5 shrink-0 text-destructive hover:text-destructive" onClick={onDeleteResult}>
                 Delete now
-              </Button>
+              </ApplicationButton>
             </div>
           </>
         ) : null}

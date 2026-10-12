@@ -50,6 +50,12 @@ def create_app() -> FastAPI:
     async def service_worker() -> FileResponse:
         return FileResponse(FRONTEND_DIST / "service-worker.js", headers={"Cache-Control": "no-cache"})
 
+    # The page's one blocking script: it sets the light or dark class before the first paint (the CSP allows no inline
+    # script). Not hashed, so revalidated like the service worker.
+    @app.get("/theme_class_before_first_paint.js", include_in_schema=False)
+    async def theme_class_before_first_paint() -> FileResponse:
+        return FileResponse(FRONTEND_DIST / "theme_class_before_first_paint.js", headers={"Cache-Control": "no-cache"})
+
     @app.post("/share-target", include_in_schema=False)
     async def share_target_without_service_worker() -> RedirectResponse:
         """The service worker answers shares itself; without it the shared file is dropped, not stored."""

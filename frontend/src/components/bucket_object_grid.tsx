@@ -3,7 +3,7 @@
 import { CloudOff, ImageOff, Video } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { ApplicationButton } from "@/components/application_button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
@@ -106,10 +106,10 @@ export function BucketObjectGrid({
         </div>
       ) : null}
       {hasMoreBucketObjects ? (
-        <Button id="load_more_bucket_button" variant="outline" size="touch" className="mt-2 w-full" disabled={isLoadingBucketPage} onClick={onLoadNextBucketPage}>
+        <ApplicationButton id="load_more_bucket_button" variant="outline" size="touch" className="mt-2 w-full" disabled={isLoadingBucketPage} onClick={onLoadNextBucketPage}>
           {isLoadingBucketPage ? <Spinner /> : null}
           Load more
-        </Button>
+        </ApplicationButton>
       ) : null}
     </section>
   )

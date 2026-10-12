@@ -6,7 +6,7 @@ import type { AnnotationEditor, AnnotationEditorRenderEventData } from "@markerj
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
+import { ApplicationButton } from "@/components/application_button"
 import { Spinner } from "@/components/ui/spinner"
 import { editorMaximumEdgePixels, type MarkerRenderSettings, type PendingUpload } from "@/lib/media_upload_types"
 
@@ -24,6 +24,22 @@ function loadMarkerUserInterfaceModule(): Promise<MarkerUserInterfaceModule> {
 
 // Hides the editor's own OK, Close and Notes buttons (our bar has Done and Cancel) and gives its controls 44 px on
 // phones. The styles go into the editor's shadow root.
+// marker.js UI 1.1.0 puts its dark palette on `#mainContainer` inside `@media (prefers-color-scheme: dark)`, which
+// outranks its own `[data-theme=light]` rule, so a dark device kept a dark editor after the visitor picked the light theme.
+// Its light rule is declared again on `#mainContainer[data-theme="light"]`, which wins on any device.
+function readLightThemeRuleForChosenLightTheme(editorShadowRoot: ShadowRoot | null): string {
+  const editorStyleSheets = editorShadowRoot ? [...editorShadowRoot.styleSheets, ...editorShadowRoot.adoptedStyleSheets] : []
+  const pendingRules: CSSRule[] = editorStyleSheets.flatMap((editorStyleSheet) => [...editorStyleSheet.cssRules])
+  while (pendingRules.length) {
+    const editorRule = pendingRules.shift()!
+    if (editorRule instanceof CSSStyleRule && editorRule.selectorText.includes('[data-theme="light"]')) {
+      return `#mainContainer[data-theme="light"] { ${editorRule.style.cssText} }`
+    }
+    if (editorRule instanceof CSSGroupingRule) pendingRules.push(...editorRule.cssRules)
+  }
+  return ""
+}
+
 function adjustMarkerEditorShadowRoot(annotationEditor: AnnotationEditor): void {
   const editorShadowRoot = annotationEditor.shadowRoot
   const editorSaveButton = editorShadowRoot?.querySelector<HTMLElement>('[aria-label="OK"]')
@@ -38,6 +54,7 @@ function adjustMarkerEditorShadowRoot(annotationEditor: AnnotationEditor): void 
   }
   const injectedStyles = document.createElement("style")
   injectedStyles.textContent = `
+    ${readLightThemeRuleForChosenLightTheme(editorShadowRoot)}
     [aria-label="Done editing"], [aria-label="Cancel editing"], [aria-label="Notes"] { display: none !important; }
     @media (max-width: 699px) {
       #toolbarContainer > div, #toolboxContainer > div { min-height: 52px; padding: 4px 6px !important; }
@@ -100,7 +117,8 @@ export function MarkerImageEditorOverlay({
         }
         const annotationEditor = new AnnotationEditorElement()
         annotationEditor.targetImage = targetImage
-        annotationEditor.theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+        // The theme the page shows: the ThemeProvider's light or dark class on <html> (components/theme_provider.tsx).
+        annotationEditor.theme = document.documentElement.classList.contains("dark") ? "dark" : "light"
         annotationEditor.settings.autoZoomIn = true
         annotationEditor.settings.autoZoomOut = true
         annotationEditor.settings.renderOnSave = false
@@ -167,14 +185,14 @@ export function MarkerImageEditorOverlay({
       className="fixed inset-0 z-50 flex flex-col bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
     >
       <div className="grid min-h-14 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-3">
-        <Button id="cancel_editor_button" variant="ghost" size="touch" className="justify-self-start" onClick={onCancelEditing}>
+        <ApplicationButton id="cancel_editor_button" variant="ghost" size="touch" className="justify-self-start" onClick={onCancelEditing}>
           Cancel
-        </Button>
+        </ApplicationButton>
         <h2 className="text-[17px] font-semibold">Edit</h2>
-        <Button id="done_editor_button" size="touch" className="justify-self-end" disabled={isRendering} onClick={pressEditorDone}>
+        <ApplicationButton id="done_editor_button" size="touch" className="justify-self-end" disabled={isRendering} onClick={pressEditorDone}>
           {isRendering ? <Spinner /> : null}
           Done
-        </Button>
+        </ApplicationButton>
       </div>
       <div ref={markerHostElement} id="marker_editor_host" className="min-h-0 flex-1 [&>*]:block [&>*]:size-full" />
     </section>

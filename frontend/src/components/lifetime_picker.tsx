@@ -18,10 +18,11 @@ import {
 const customChoiceValue = "custom"
 const customLifetimeRangeMessage = "Pick between 1 minute and 7 days."
 
-// One row of one outline: square inner corners, round outer ones.
+// One row of one outline: square inner corners, round outer ones; a segment shrinks a touch while pressed, like the
+// app's buttons (components/application_button.tsx).
 function segmentClassName(segmentIndex: number, segmentCount: number): string {
   const outerCorners = segmentIndex === 0 ? "rounded-l-lg! border-l!" : segmentIndex === segmentCount - 1 ? "rounded-r-lg!" : ""
-  return `relative h-11 rounded-none! border-l-0 text-[15px] font-medium data-[state=on]:bg-transparent data-[state=on]:text-background ${outerCorners}`
+  return `relative h-11 rounded-none! border-l-0 text-[15px] font-medium motion-safe:active:scale-[0.97] data-[state=on]:bg-transparent data-[state=on]:text-background ${outerCorners}`
 }
 
 // The largest unit that holds the lifetime whole: 2 days, not 48 hours.

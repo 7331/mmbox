@@ -1,8 +1,10 @@
 // A Drawer on a phone, a Dialog from 768 px (shadcn's responsive pattern, https://ui.shadcn.com/docs/components/drawer),
 // controlled by the caller, with its own title and description for screen readers. The bucket settings use it.
+import { XIcon } from "lucide-react"
 import type { ReactNode } from "react"
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ApplicationButton } from "@/components/application_button"
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
 import { useMediaQuery } from "@/hooks/use_media_query"
 
@@ -26,12 +28,19 @@ export function ResponsiveSheet({
   if (isWideScreen) {
     return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto rounded-3xl p-7 sm:max-w-[440px]">
+        <DialogContent showCloseButton={false} className="max-h-[90dvh] gap-0 overflow-y-auto rounded-3xl p-7 sm:max-w-[440px]">
           <DialogHeader className="pb-4 text-left">
             <DialogTitle className="text-2xl font-semibold tracking-tight">{title}</DialogTitle>
             <DialogDescription className="text-[15px]">{description}</DialogDescription>
           </DialogHeader>
           {children}
+          {/* shadcn's own close button, as an app button: the press scale and a 44 px hit area round its small look. */}
+          <DialogClose asChild>
+            <ApplicationButton variant="ghost" size="icon-sm" className="absolute top-2 right-2 touch-target-hit-area">
+              <XIcon />
+              <span className="sr-only">Close</span>
+            </ApplicationButton>
+          </DialogClose>
         </DialogContent>
       </Dialog>
     )

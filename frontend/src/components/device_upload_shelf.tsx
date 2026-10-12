@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
 
-import { Button } from "@/components/ui/button"
+import { ApplicationButton } from "@/components/application_button"
 import { describeShelfItemExpiry, isExpiredShelfRecord, isPermanentShelfRecord } from "@/hooks/use_upload_shelf"
 import { formatRemainingTimeShort } from "@/lib/display_formatting"
 import type { ShelfItem } from "@/lib/media_upload_types"
@@ -32,7 +32,7 @@ export function DeviceUploadShelf({
           On this device
         </h2>
         {canExpand ? (
-          <Button
+          <ApplicationButton
             id="toggle_shelf_button"
             variant="ghost"
             size="touch"
@@ -42,7 +42,7 @@ export function DeviceUploadShelf({
             onClick={() => setShelfIsExpanded(!shelfIsExpanded)}
           >
             {shelfIsExpanded ? "Show less" : `See all ${shelfItems.length}`}
-          </Button>
+          </ApplicationButton>
         ) : null}
       </header>
       <div id="upload_shelf_list" className="grid grid-cols-4 gap-2">

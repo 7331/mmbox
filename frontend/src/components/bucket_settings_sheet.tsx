@@ -7,7 +7,7 @@ import { toast } from "sonner"
 
 import { ResponsiveSheet } from "@/components/responsive_sheet"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Button } from "@/components/ui/button"
+import { ApplicationButton } from "@/components/application_button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
@@ -236,7 +236,10 @@ function BucketSettingsForm({
       <div className="flex flex-col gap-4">{connectionFields.map(renderBucketField)}</div>
       <div className="flex flex-col gap-4">{publishingFields.map(renderBucketField)}</div>
       <Accordion type="single" collapsible className="rounded-2xl border px-4">
-        <AccordionItem value="cors_help">
+        {/* The content's clip box reaches 12 px past the text, so a 44 px hit area or a focus ring at its edge isn't cut
+            off while the content stays where it was (UX-045, 2026-10-12). AccordionContent's className styles its inner
+            div, so the clip box (its direct child slot) is styled from here. */}
+        <AccordionItem value="cors_help" className="[&>[data-slot=accordion-content]]:-mx-3 [&>[data-slot=accordion-content]]:px-3">
           <AccordionTrigger id="cors_help_trigger" className="min-h-11 items-center text-[15px]">
             CORS (optional)
           </AccordionTrigger>
@@ -254,14 +257,14 @@ function BucketSettingsForm({
               {corsCommandText}
             </pre>
             <div className="grid grid-cols-2 gap-2">
-              <Button id="copy_cors_policy_button" type="button" variant="outline" size="touch" onClick={() => void copyHelpText(corsPolicyText, "Policy")}>
+              <ApplicationButton id="copy_cors_policy_button" type="button" variant="outline" size="touch" onClick={() => void copyHelpText(corsPolicyText, "Policy")}>
                 <Copy />
                 Copy policy
-              </Button>
-              <Button id="copy_cors_command_button" type="button" variant="outline" size="touch" onClick={() => void copyHelpText(corsCommandText, "Command")}>
+              </ApplicationButton>
+              <ApplicationButton id="copy_cors_command_button" type="button" variant="outline" size="touch" onClick={() => void copyHelpText(corsCommandText, "Command")}>
                 <Copy />
                 Copy command
-              </Button>
+              </ApplicationButton>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -282,16 +285,16 @@ function BucketSettingsForm({
       </p>
       <div className="flex flex-col gap-2 pb-1">
         <div className="grid grid-cols-[auto_1fr] gap-2">
-          <Button id="test_bucket_button" type="button" variant="outline" size="xl" disabled={isTesting} onClick={() => void runBucketTest()}>
+          <ApplicationButton id="test_bucket_button" type="button" variant="outline" size="xl" disabled={isTesting} onClick={() => void runBucketTest()}>
             Test
-          </Button>
-          <Button id="save_bucket_button" type="submit" size="xl" disabled={isTesting}>
+          </ApplicationButton>
+          <ApplicationButton id="save_bucket_button" type="submit" size="xl" disabled={isTesting}>
             {isTesting ? <Spinner /> : <CircleCheck />}
             Test and save
-          </Button>
+          </ApplicationButton>
         </div>
         {currentBucketSettings ? (
-          <Button
+          <ApplicationButton
             id="forget_bucket_button"
             type="button"
             variant="ghost"
@@ -303,7 +306,7 @@ function BucketSettingsForm({
             }}
           >
             Stop using this bucket
-          </Button>
+          </ApplicationButton>
         ) : null}
       </div>
     </form>

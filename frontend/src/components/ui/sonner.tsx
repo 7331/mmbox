@@ -1,23 +1,13 @@
+import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
-import { useMediaQuery } from "@/hooks/use_media_query"
-
-const phoneToastBottomOffset = "calc(max(env(safe-area-inset-bottom), 1.25rem) + 4.25rem)"
-
 const Toaster = ({ ...props }: ToasterProps) => {
-  // Phones get toasts at the bottom, where they cover no top bar; wider screens at the top.
-  const viewportIsPhone = useMediaQuery("(max-width: 639px)")
+  const { theme = "system" } = useTheme()
+
   return (
     <Sonner
-      // The app follows prefers-color-scheme; there is no theme switch, so no next-themes.
-      theme="system"
-      position={viewportIsPhone ? "bottom-center" : "top-center"}
-      // On a phone a screen's primary button sits at the bottom (PageColumn's footer: a 52 px button over the safe-area
-      // padding), so toasts start just above it rather than over it. Sonner reads `mobileOffset` up to 600 px
-      // and `offset` above that (https://sonner.emilkowal.ski/toaster).
-      mobileOffset={{ bottom: phoneToastBottomOffset }}
-      offset={viewportIsPhone ? { bottom: phoneToastBottomOffset } : undefined}
+      theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
         success: (
@@ -47,8 +37,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
-          // An action keeps its small look and gets a 44px hit area.
-          actionButton: "relative touch-target-hit-area",
         },
       }}
       {...props}

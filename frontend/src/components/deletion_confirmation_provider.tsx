@@ -1,11 +1,11 @@
 // Asks before something irreversible (deleting a link or a bucket object) in one shared AlertDialog:
 // `askForDeletionConfirmation` resolves true only for an explicit yes; closing or "Keep" resolves false.
+import { AlertDialog as AlertDialogPrimitive } from "radix-ui"
 import { useCallback, useRef, useState, type ReactNode } from "react"
 
+import { ApplicationButton } from "@/components/application_button"
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -48,10 +48,18 @@ export function DeletionConfirmationProvider({ children }: { children: ReactNode
             <AlertDialogDescription>{openQuestion?.message}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel id="cancel_deletion_button">Keep</AlertDialogCancel>
-            <AlertDialogAction id="confirm_deletion_button" variant="destructive" onClick={() => finishConfirmation(true)}>
-              {openQuestion?.acceptLabel ?? "Delete now"}
-            </AlertDialogAction>
+            {/* Radix's Cancel and Action around app buttons, as shadcn's AlertDialogCancel and AlertDialogAction do around its
+                Button: both answers keep the 44 px touch size and the press scale (components/application_button.tsx). */}
+            <AlertDialogPrimitive.Cancel asChild>
+              <ApplicationButton id="cancel_deletion_button" variant="outline" size="touch">
+                Keep
+              </ApplicationButton>
+            </AlertDialogPrimitive.Cancel>
+            <AlertDialogPrimitive.Action asChild>
+              <ApplicationButton id="confirm_deletion_button" variant="destructive" size="touch" onClick={() => finishConfirmation(true)}>
+                {openQuestion?.acceptLabel ?? "Delete now"}
+              </ApplicationButton>
+            </AlertDialogPrimitive.Action>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
