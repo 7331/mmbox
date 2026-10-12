@@ -1,13 +1,16 @@
 FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS frontend
 
+# pnpm comes from corepack at the version package.json's packageManager pins.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 WORKDIR /build
+RUN corepack enable
 
 # Deps layer: cached until the manifest or lockfile changes.
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 
 COPY frontend/ ./
-RUN npm run build
+RUN pnpm build
 
 FROM python:3.14-slim@sha256:0741d101873c12ab927e6f8653feb8862b9bd58771177acb1b885b95141f91b4 AS builder
 

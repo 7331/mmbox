@@ -48,7 +48,7 @@ curl -X DELETE -H "X-Delete-Token: <token>" https://mmbox.example/api/media/<id>
 
 ```sh
 uv sync --project backend && uv run --project backend pre-commit install
-(cd frontend && npm install && npm run dev)   # proxies /api to localhost:8099
+(cd frontend && pnpm install && pnpm dev)   # proxies /api to MMBOX_DEV_API_URL, default 127.0.0.1:8099
 ```
 
 Contributor rules: `AGENTS.md`.

@@ -1,6 +1,6 @@
 # Install once: uv run --project backend pre-commit install --hook-type pre-commit --hook-type pre-push
 # Commit: fast auto-fixers only. Push: the fast gates, so nothing red leaves the machine. CI stays the authority.
-# Hooks are `repo: local` so tool versions come from backend/uv.lock and frontend/package-lock.json, as in CI.
+# Hooks are `repo: local` so tool versions come from backend/uv.lock and frontend/pnpm-lock.yaml, as in CI.
 default_install_hook_types: [pre-commit, pre-push]
 repos:
   - repo: local
@@ -29,9 +29,9 @@ repos:
         always_run: true
         stages: [pre-push]
 
-      - id: frontend-typecheck
-        name: frontend typecheck
-        entry: sh -c 'cd frontend && npm run -s typecheck'
+      - id: frontend-gates
+        name: frontend typecheck and lint
+        entry: sh -c 'cd frontend && pnpm --silent typecheck && pnpm --silent lint'
         language: system
         pass_filenames: false
         files: ^frontend/
