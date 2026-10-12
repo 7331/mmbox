@@ -4,7 +4,7 @@ A phone-friendly viewer and uploader for any S3-compatible bucket, plus self-del
 
 ![mmbox on a phone](docs/screenshot.jpg)
 
-- **No bucket:** drop or paste an image and get a link that deletes itself after 15 minutes, an hour or a day. Location and camera data are stripped.
+- **No bucket:** drop or paste an image and get a link that deletes itself when you choose, from a minute to a week. Location and camera data are stripped.
 - **Your bucket** (R2, S3, RustFS, MinIO, B2, ...): paste the endpoint and a key, then browse, upload, view and delete. With CORS on the bucket, the browser talks to it directly (any size, video included); without CORS, the server relays images.
 - No accounts. Keys stay in your browser.
 

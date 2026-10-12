@@ -25,13 +25,21 @@ export const videoExtensionsByContentType: Record<string, string> = {
 export const acceptedImageTypes = "image/png,image/jpeg,image/gif,image/webp"
 export const acceptedImageAndVideoTypes = `${acceptedImageTypes},video/mp4,video/webm,video/quicktime`
 
-// The server's lifetimes (backend media `MediaLifetimeSeconds`); a value the server doesn't know is refused.
-// A remembered lifetime that is no longer offered falls back to the default.
-export const lifetimeChoices = [
+// Any lifetime the server accepts (backend media/enums.py: a minute to a week); the page offers these presets and
+// Custom (components/lifetime_picker.tsx).
+export const minimumLifetimeSeconds = 60
+export const maximumLifetimeSeconds = 7 * 86400
+export const lifetimePresets = [
   { seconds: 900, label: "15 min" },
   { seconds: 3600, label: "1 hour" },
   { seconds: 86400, label: "1 day" },
 ] as const
+export const lifetimeUnits = [
+  { name: "minutes", label: "min", seconds: 60 },
+  { name: "hours", label: "hours", seconds: 3600 },
+  { name: "days", label: "days", seconds: 86400 },
+] as const
+export type LifetimeUnit = (typeof lifetimeUnits)[number]
 
 export function isVideoContentType(contentType: string | undefined): boolean {
   return Boolean(contentType && videoExtensionsByContentType[contentType])

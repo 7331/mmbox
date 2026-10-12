@@ -29,10 +29,11 @@ export function formatDayAndTime(timestamp: number): string {
   return formatLongDate(timestamp)
 }
 
-// Compact remaining time for badges: "23 h", "41 min", "40 s", "expired".
+// Compact remaining time for badges: "6 d", "23 h", "41 min", "40 s", "expired".
 export function formatRemainingTimeShort(expiresAt: number, currentTime: number): string {
   const remainingSeconds = Math.max(0, Math.round((expiresAt - currentTime) / 1000))
   if (remainingSeconds === 0) return "expired"
+  if (remainingSeconds >= 2 * 86400) return `${Math.floor(remainingSeconds / 86400)} d`
   if (remainingSeconds >= 3600) return `${Math.floor(remainingSeconds / 3600)} h`
   if (remainingSeconds >= 60) return `${Math.floor(remainingSeconds / 60)} min`
   return `${remainingSeconds} s`

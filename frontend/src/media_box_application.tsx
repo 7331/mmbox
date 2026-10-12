@@ -34,7 +34,8 @@ import {
   defaultLifetimeSeconds,
   imageExtensionsByContentType,
   isVideoContentType,
-  lifetimeChoices,
+  maximumLifetimeSeconds,
+  minimumLifetimeSeconds,
   type ShelfItem,
 } from "@/lib/media_upload_types"
 import { deleteFromServer } from "@/lib/server_upload"
@@ -55,7 +56,8 @@ setFirstHistoryFailureReporter(() => toast.error("Local history is unavailable")
 function readStoredLifetimeSeconds(): number {
   try {
     const storedSeconds = Number(localStorage.getItem(lifetimeStorageKey))
-    return lifetimeChoices.some((lifetimeChoice) => lifetimeChoice.seconds === storedSeconds) ? storedSeconds : defaultLifetimeSeconds
+    const storedIsAccepted = Number.isInteger(storedSeconds) && storedSeconds >= minimumLifetimeSeconds && storedSeconds <= maximumLifetimeSeconds
+    return storedIsAccepted ? storedSeconds : defaultLifetimeSeconds
   } catch {
     return defaultLifetimeSeconds
   }

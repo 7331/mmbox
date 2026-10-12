@@ -7,7 +7,7 @@ import secrets
 from pydantic import BaseModel, ConfigDict
 
 from app.media.configuration import MediaSettings
-from app.media.enums import MediaLifetimeSeconds, MediaType
+from app.media.enums import MediaType
 from app.media.errors import InvalidImageError, InvalidMediaTypeError, MediaNotFoundError, MediaTooLargeError
 from app.media.image_encoding import strip_metadata_and_downscale
 from app.media.store import MediaStore, StoredMedia
@@ -36,9 +36,7 @@ class MediaService:
         self.settings = settings
         self.image_process_pool = image_process_pool
 
-    async def upload_media(
-        self, data: bytes, *, content_type: str, lifetime_seconds: MediaLifetimeSeconds
-    ) -> UploadedMedia:
+    async def upload_media(self, data: bytes, *, content_type: str, lifetime_seconds: int) -> UploadedMedia:
         prepared = await self.prepare_image(data, content_type=content_type)
         media_type = prepared.media_type
         media_id = secrets.token_hex(16)
@@ -48,7 +46,7 @@ class MediaService:
             media=StoredMedia(data=prepared.data, media_type=media_type),
             delete_token=delete_token,
             # redis-py encodes ints with repr(), which for an IntEnum member is not a number.
-            lifetime_seconds=int(lifetime_seconds),
+            lifetime_seconds=lifetime_seconds,
         )
         return UploadedMedia(
             media_id=media_id,

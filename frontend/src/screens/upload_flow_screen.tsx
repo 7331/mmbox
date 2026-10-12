@@ -2,23 +2,22 @@
 // goes to, Edit), "progress" (Cancel) and "result" (the link, already copied, Share and Copy, Delete now). The caller
 // remounts it per stage inside `PageContentRisesInContext`, so each stage rises in.
 import { Check, CircleCheck, Database, Link as LinkIcon, Lock, Pencil, Plus, Share, Upload, X } from "lucide-react"
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 
 import { DrawnCheckPath } from "@/components/drawn_check_path"
+import { LifetimePicker } from "@/components/lifetime_picker"
 import { OneLineLinkText } from "@/components/one_line_link_text"
 import { PageColumn } from "@/components/page_column"
-import { SlidingSelectionPill } from "@/components/sliding_selection_pill"
 import { TapToCopyButton } from "@/components/tap_to_copy_button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { UploadFlowNote, UploadFlowStage } from "@/hooks/use_upload_flow"
 import { buildAbsoluteUrl, describeShelfItemExpiry } from "@/hooks/use_upload_shelf"
 import { describeBucketPlace, type BucketSettings } from "@/lib/bucket_connection"
 import { canOpenShareSheet } from "@/lib/clipboard_and_sharing"
-import { formatByteCount, formatDayAndTime } from "@/lib/display_formatting"
-import { isVideoContentType, lifetimeChoices, type PendingUpload, type ShelfItem } from "@/lib/media_upload_types"
+import { formatByteCount } from "@/lib/display_formatting"
+import { isVideoContentType, type PendingUpload, type ShelfItem } from "@/lib/media_upload_types"
 
 // What happens to metadata on the way, for the line under the photo.
 function describeMetadataHandling(contentType: string, bucketSettings: BucketSettings | null): string {
@@ -110,6 +109,8 @@ export function UploadFlowScreen({
   )
   const usingBucket = Boolean(bucketSettings)
   const failedBefore = uploadFlowNote?.tone === "error"
+  // False while a custom lifetime is out of range: the link can't be made until it is fixed.
+  const [customLifetimeIsValid, setCustomLifetimeIsValid] = useState(true)
 
   if (uploadFlowStage === "selected") {
     return (
@@ -129,7 +130,7 @@ export function UploadFlowScreen({
           />
         }
         footer={
-          <Button id="upload_selected_button" size="xl" className="w-full" onClick={onUploadPendingFile}>
+          <Button id="upload_selected_button" size="xl" className="w-full" disabled={!usingBucket && !customLifetimeIsValid} onClick={onUploadPendingFile}>
             {usingBucket ? <Upload /> : <LinkIcon />}
             {failedBefore ? "Try again" : usingBucket ? "Upload to bucket" : "Create link"}
           </Button>
@@ -176,42 +177,12 @@ export function UploadFlowScreen({
               </p>
             </div>
           ) : (
-            <div id="lifetime_section" className="flex flex-col gap-2">
-              <h2 id="lifetime_heading" className="text-sm font-medium">
-                Delete after
-              </h2>
-              <ToggleGroup
-                id="lifetime_choices"
-                type="single"
-                variant="outline"
-                spacing={0}
-                value={String(selectedLifetimeSeconds)}
-                onValueChange={(pickedSeconds) => {
-                  if (pickedSeconds) onSelectLifetime(Number(pickedSeconds))
-                }}
-                aria-labelledby="lifetime_heading"
-                className="grid w-full grid-cols-3"
-              >
-                {lifetimeChoices.map((lifetimeChoice, choiceIndex) => (
-                  <ToggleGroupItem
-                    key={lifetimeChoice.seconds}
-                    value={String(lifetimeChoice.seconds)}
-                    data-testid={`lifetime_choice_${lifetimeChoice.seconds}`}
-                    className={
-                      // One row of one outline: square inner corners, round outer ones.
-                      "relative h-11 rounded-none! border-l-0 text-[15px] font-medium data-[state=on]:bg-transparent data-[state=on]:text-background " +
-                      ["rounded-l-lg! border-l!", "", "rounded-r-lg!"][choiceIndex]
-                    }
-                  >
-                    {selectedLifetimeSeconds === lifetimeChoice.seconds ? <SlidingSelectionPill layoutId="lifetime_selected_pill" /> : null}
-                    <span className="relative">{lifetimeChoice.label}</span>
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-              <p id="lifetime_expiry" className="text-[13px] text-muted-foreground">
-                Link stops working {formatDayAndTime(currentTime + selectedLifetimeSeconds * 1000)}
-              </p>
-            </div>
+            <LifetimePicker
+              selectedLifetimeSeconds={selectedLifetimeSeconds}
+              currentTime={currentTime}
+              onSelectLifetime={onSelectLifetime}
+              onCustomLifetimeValidityChange={setCustomLifetimeIsValid}
+            />
           )}
         </div>
       </PageColumn>

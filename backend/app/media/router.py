@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, Header, Path, Response, Uplo
 
 from app.media.configuration import get_media_settings
 from app.media.dependencies import MediaServiceDependency
-from app.media.enums import MediaLifetimeSeconds
+from app.media.enums import DEFAULT_LIFETIME_SECONDS, MAXIMUM_LIFETIME_SECONDS, MINIMUM_LIFETIME_SECONDS
 from app.media.schemas import HEX_128_BIT_PATTERN, DeleteResponse, UploadResponse
 from app.rate_limits.dependencies import check_fetch_rate_limit, check_upload_rate_limit
 
@@ -19,7 +19,7 @@ async def upload_media(
     *,
     file: Annotated[UploadFile, File()],
     media_service: MediaServiceDependency,
-    ttl: Annotated[MediaLifetimeSeconds, Form()] = MediaLifetimeSeconds.ONE_DAY,
+    ttl: Annotated[int, Form(ge=MINIMUM_LIFETIME_SECONDS, le=MAXIMUM_LIFETIME_SECONDS)] = DEFAULT_LIFETIME_SECONDS,
 ) -> UploadResponse:
     # One byte past the cap is enough for the service to see the file is too large.
     data = await file.read(get_media_settings().max_size_bytes + 1)

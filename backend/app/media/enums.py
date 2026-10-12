@@ -1,4 +1,4 @@
-from enum import IntEnum, StrEnum
+from enum import StrEnum
 
 
 class MediaType(StrEnum):
@@ -20,10 +20,8 @@ MEDIA_TYPE_EXTENSIONS = {MediaType.PNG: "png", MediaType.JPEG: "jpg", MediaType.
 MEDIA_TYPE_PILLOW_FORMATS = {MediaType.PNG: "PNG", MediaType.JPEG: "JPEG", MediaType.GIF: "GIF", MediaType.WEBP: "WEBP"}
 
 
-class MediaLifetimeSeconds(IntEnum):
-    """The lifetimes the page offers; a product choice, not a free integer. Three, not eight (owner, 2026-10-12: "way
-    too many expiry options"): gone soon, gone today-ish, gone tomorrow."""
-
-    FIFTEEN_MINUTES = 900
-    ONE_HOUR = 3600
-    ONE_DAY = 86400
+# Any lifetime from a minute to a week; the page offers a few presets and a custom one (owner, 2026-10-12: "We can do
+# any time to expire"). Redis evicts by LRU when full, so a long lifetime is a ceiling, not a promise.
+MINIMUM_LIFETIME_SECONDS = 60
+MAXIMUM_LIFETIME_SECONDS = 7 * 86400
+DEFAULT_LIFETIME_SECONDS = 86400
