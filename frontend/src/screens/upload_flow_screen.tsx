@@ -190,7 +190,7 @@ export function UploadFlowScreen({
                   if (pickedSeconds) onSelectLifetime(Number(pickedSeconds))
                 }}
                 aria-labelledby="lifetime_heading"
-                className="grid w-full grid-cols-4 [&>*:nth-child(-n+4)]:border-b-0"
+                className="grid w-full grid-cols-3"
               >
                 {lifetimeChoices.map((lifetimeChoice, choiceIndex) => (
                   <ToggleGroupItem
@@ -198,9 +198,9 @@ export function UploadFlowScreen({
                     value={String(lifetimeChoice.seconds)}
                     data-testid={`lifetime_choice_${lifetimeChoice.seconds}`}
                     className={
-                      // A 4x2 grid of one outline: square inner corners, round outer ones, one border between rows.
+                      // One row of one outline: square inner corners, round outer ones.
                       "relative h-11 rounded-none! border-l-0 text-[15px] font-medium data-[state=on]:bg-transparent data-[state=on]:text-background " +
-                      ["rounded-tl-lg! border-l!", "", "", "rounded-tr-lg!", "rounded-bl-lg! border-l!", "", "", "rounded-br-lg!"][choiceIndex]
+                      ["rounded-l-lg! border-l!", "", "rounded-r-lg!"][choiceIndex]
                     }
                   >
                     {selectedLifetimeSeconds === lifetimeChoice.seconds ? <SlidingSelectionPill layoutId="lifetime_selected_pill" /> : null}

@@ -26,15 +26,11 @@ export const acceptedImageTypes = "image/png,image/jpeg,image/gif,image/webp"
 export const acceptedImageAndVideoTypes = `${acceptedImageTypes},video/mp4,video/webm,video/quicktime`
 
 // The server's lifetimes (backend media `MediaLifetimeSeconds`); a value the server doesn't know is refused.
+// A remembered lifetime that is no longer offered falls back to the default.
 export const lifetimeChoices = [
-  { seconds: 300, label: "5 min" },
   { seconds: 900, label: "15 min" },
-  { seconds: 1800, label: "30 min" },
-  { seconds: 3600, label: "1 h" },
-  { seconds: 10800, label: "3 h" },
-  { seconds: 21600, label: "6 h" },
-  { seconds: 43200, label: "12 h" },
-  { seconds: 86400, label: "24 h" },
+  { seconds: 3600, label: "1 hour" },
+  { seconds: 86400, label: "1 day" },
 ] as const
 
 export function isVideoContentType(contentType: string | undefined): boolean {

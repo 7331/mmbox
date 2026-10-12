@@ -127,7 +127,7 @@ export function HomeScreen({
             </motion.button>
             <p className="flex items-center justify-center gap-1.5 text-[13px] text-muted-foreground">
               <Lock className="size-3.5" />
-              Metadata stripped · links expire in 5 min to 24 h
+              Metadata stripped · links expire in 15 min to 1 day
             </p>
           </section>
         )}

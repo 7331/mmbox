@@ -21,13 +21,9 @@ MEDIA_TYPE_PILLOW_FORMATS = {MediaType.PNG: "PNG", MediaType.JPEG: "JPEG", Media
 
 
 class MediaLifetimeSeconds(IntEnum):
-    """The lifetimes the page offers; a product choice, not a free integer."""
+    """The lifetimes the page offers; a product choice, not a free integer. Three, not eight (owner, 2026-10-12: "way
+    too many expiry options"): gone soon, gone today-ish, gone tomorrow."""
 
-    FIVE_MINUTES = 300
     FIFTEEN_MINUTES = 900
-    THIRTY_MINUTES = 1800
     ONE_HOUR = 3600
-    THREE_HOURS = 10800
-    SIX_HOURS = 21600
-    TWELVE_HOURS = 43200
     ONE_DAY = 86400
